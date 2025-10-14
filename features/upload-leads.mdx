@@ -1,0 +1,290 @@
+---
+title: "Upload Leads"
+description: "Import leads into your workspace using CSV, Google Sheets, HubSpot, or Salesforce"
+icon: "upload"
+---
+
+## Overview
+
+Import leads into your workspace using multiple methods: CSV upload, Google Sheets, HubSpot, or Salesforce integration.
+
+<Card title="Quick Start" icon="rocket">
+  New to importing leads? Start with **CSV Upload** for the easiest experience.
+</Card>
+
+---
+
+## CSV Upload
+
+The recommended method for beginners. Upload a CSV file with your lead data.
+
+### Step 1: Prepare Your CSV File
+
+Your CSV must include these **required fields**:
+
+<ParamField path="firstName" type="string" required>
+  Lead's first name
+</ParamField>
+
+<ParamField path="lastName" type="string" required>
+  Lead's last name
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Primary email address
+</ParamField>
+
+<ParamField path="phone" type="string" required>
+  Primary phone number (include country code, e.g., +1234567890)
+</ParamField>
+
+**Optional fields:**
+
+<ParamField path="altPhone1, altPhone2, altPhone3" type="string">
+  Alternate phone numbers
+</ParamField>
+
+<ParamField path="altEmail1, altEmail2, altEmail3" type="string">
+  Alternate email addresses
+</ParamField>
+
+<ParamField path="companyName" type="string">
+  Company or organization name
+</ParamField>
+
+<ParamField path="jobTitle" type="string">
+  Position or role
+</ParamField>
+
+<ParamField path="linkedinUrl" type="string">
+  LinkedIn profile URL
+</ParamField>
+
+<ParamField path="notes" type="string">
+  Additional notes or context
+</ParamField>
+
+<Info>
+Any additional columns will be stored as **custom fields**.
+</Info>
+
+### Step 2: Download Template (Optional)
+
+Click the **Download Template** button to get a pre-formatted CSV with all fields.
+
+### Step 3: Upload Your File
+
+1. Navigate to **Leads → Import**
+2. Select **CSV File** method
+3. Drag & drop your file or click **Choose File**
+4. File size limit: **10MB max**
+
+### Step 4: Select or Create a List
+
+Choose whether to:
+- Add to an **existing list** (select from dropdown)
+- Create a **new list** (enter list name)
+
+### Step 5: Map Fields
+
+The system will **auto-map** common field names. Review and adjust:
+- Each CSV column maps to one lead field
+- Required fields must be mapped
+- See live preview of sample data
+
+### Step 6: Preview & Import
+
+- Review first 10 records
+- See validation summary (valid leads, invalid records)
+- Click **Import** to save
+
+**Import Results:**
+- ✅ Number of leads saved
+- ⚠️ Invalid records skipped
+- 📋 List assignment confirmation
+
+---
+
+## Google Sheets Integration
+
+Import leads directly from Google Sheets.
+
+### Prerequisites
+
+<Steps>
+  <Step title="Google API Access Token">
+    Generate an access token from Google Cloud Console
+  </Step>
+  <Step title="Spreadsheet ID">
+    Found in your Google Sheet URL
+  </Step>
+  <Step title="Sheet Name">
+    Default: "Sheet1" (optional parameter)
+  </Step>
+</Steps>
+
+### Import Steps
+
+1. Navigate to **Leads → Import**
+2. Select **Google Sheets**
+3. Enter credentials:
+   - Access Token
+   - Spreadsheet ID
+   - Sheet Name (optional)
+4. Click **Connect & Import**
+
+<Note>
+Your Google Sheet must follow the same field structure as CSV (see above).
+</Note>
+
+---
+
+## HubSpot Integration
+
+<Info>
+**Premium Feature** - Requires HubSpot account and premium plan
+</Info>
+
+### Features
+
+- ✓ Bidirectional sync
+- ✓ Contact properties
+- ✓ Deal tracking
+- ✓ Activity logs
+
+### Setup Steps
+
+1. Navigate to **Leads → Import**
+2. Select **HubSpot**
+3. Click **Authorize & Import**
+4. Log in to HubSpot and grant permissions
+5. System automatically imports contacts
+
+---
+
+## Salesforce Integration
+
+<Info>
+**Premium Feature** - Requires Salesforce account and premium plan
+</Info>
+
+### Features
+
+- ✓ Lead & Contact sync
+- ✓ Custom fields support
+- ✓ Campaign tracking
+- ✓ Opportunity data
+
+### Setup Steps
+
+1. Navigate to **Leads → Import**
+2. Select **Salesforce**
+3. Click **Authorize & Import**
+4. Log in to Salesforce and grant permissions
+5. System automatically imports leads
+
+---
+
+## Data Validation Rules
+
+### Phone Numbers
+
+Phone numbers are automatically formatted according to these rules:
+
+| Input Format | Output Format | Description |
+|--------------|---------------|-------------|
+| 10 digits | +1XXXXXXXXXX | Assumes US number |
+| 11 digits (starts with 1) | +1XXXXXXXXXX | US number with country code |
+| Other formats | Must be E.164 | International: +[country][number] |
+
+### Email Addresses
+
+- Must contain `@` and `.`
+- Automatically converted to lowercase
+- Whitespace trimmed
+
+### Duplicate Detection
+
+<Warning>
+Duplicates are detected by email address:
+- Duplicate rows in same CSV are skipped
+- Existing database duplicates are handled gracefully
+</Warning>
+
+---
+
+## API Reference
+
+Upload leads programmatically using our REST API.
+
+<Card title="API Endpoint" icon="code" href="/api-reference/leads">
+  View complete API documentation for lead uploads
+</Card>
+
+### Quick Example
+
+```bash
+POST /api/leads
+```
+
+**Request:**
+
+```json
+{
+  "leads": [
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+12025551234",
+      "companyName": "Acme Corp",
+      "jobTitle": "CEO",
+      "customFields": {
+        "industry": "Technology",
+        "revenue": "1M-5M"
+      }
+    }
+  ],
+  "listId": "507f1f77bcf86cd799439011",
+  "source": "csv_import"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Leads saved successfully",
+  "savedCount": 1,
+  "listId": "507f1f77bcf86cd799439011"
+}
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| `400` | Invalid data or missing required fields |
+| `401` | Unauthorized (missing/invalid auth token) |
+| `404` | List not found |
+| `500` | Server error |
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="✅ Use Templates" icon="file-template">
+    Download and use our CSV template to ensure proper formatting
+  </Accordion>
+  <Accordion title="📋 Validate Before Upload" icon="check-circle">
+    Review your data for completeness and accuracy before importing
+  </Accordion>
+  <Accordion title="🗂️ Organize with Lists" icon="list">
+    Create specific lists for different campaigns or lead sources
+  </Accordion>
+  <Accordion title="🔄 Regular Syncs" icon="rotate">
+    Set up automated syncs with HubSpot/Salesforce for up-to-date data
+  </Accordion>
+</AccordionGroup>
+

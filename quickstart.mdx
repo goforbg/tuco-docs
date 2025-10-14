@@ -1,80 +1,357 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Get started with Tuco AI in under 5 minutes"
+icon: "rocket"
 ---
 
-## Get started in three steps
+## Welcome to Tuco AI! 🎉
 
-Get your documentation site running locally and make your first customization.
+This guide will help you upload your first leads, check iMessage availability, and send your first message in just a few minutes.
 
-### Step 1: Set up your local environment
+---
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Prerequisites
 
-### Step 2: Deploy your changes
+Before you begin, make sure you have:
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+<Check>
+  Active Tuco AI account - [Sign up here](https://app.tuco.ai/signup)
+</Check>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Check>
+  CSV file with leads (optional - we'll show you how to create one)
+</Check>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<Check>
+  Messaging line configured (we'll guide you through this)
+</Check>
 
-### Step 3: Go live
+---
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Step 1: Set Up Your First Line
 
-## Next steps
+A "line" is your messaging channel. You need at least one active line to send messages.
 
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+<Steps>
+  <Step title="Navigate to Lines">
+    Log in and go to **Settings → Lines**
+  </Step>
+  
+  <Step title="Purchase or Configure Line">
+    Click **Add Line** and follow the setup wizard
+  </Step>
+  
+  <Step title="Verify Server URL">
+    Ensure your line has a valid Server URL and shows as **Active**
+  </Step>
+</Steps>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+**First-time setup:** Your first line configuration may take 2-3 minutes. You'll receive an email when it's ready.
 </Note>
+
+---
+
+## Step 2: Upload Your First Leads
+
+Now let's add some leads to your workspace.
+
+### Option A: Use Sample Template
+
+<Steps>
+  <Step title="Download Template">
+    Go to **Leads → Import** and click **Download Template**
+  </Step>
+  
+  <Step title="Fill in Sample Data">
+    Add 2-3 sample leads to the CSV:
+    
+    ```csv
+    firstName,lastName,email,phone,companyName
+    John,Doe,john@example.com,+12025551234,Acme Corp
+    Jane,Smith,jane@example.com,+12025555678,Tech Inc
+    ```
+  </Step>
+  
+  <Step title="Upload CSV">
+    Drag & drop the file or click **Choose File**
+  </Step>
+  
+  <Step title="Create List">
+    Name your first list (e.g., "Sample Leads")
+  </Step>
+  
+  <Step title="Map Fields">
+    Review auto-mapped fields and click **Import**
+  </Step>
+</Steps>
+
+### Option B: Quick Send (No Upload Required)
+
+Skip the upload and try Quick Send instead:
+
+<Card title="Try Quick Send" icon="bolt" href="#step-4-send-your-first-message">
+  Jump to Step 4 to send a message without uploading leads
+</Card>
+
+---
+
+## Step 3: Check iMessage Availability
+
+Verify which leads support iMessage before sending.
+
+<Steps>
+  <Step title="Navigate to Leads">
+    Go to **Leads** page - you'll see your imported leads
+  </Step>
+  
+  <Step title="Auto-Check Running">
+    The system automatically checks availability after upload
+    
+    Watch the status icons:
+    - 🔄 **Checking** - Verification in progress
+    - 🔵 **Available** - Ready to receive iMessage
+    - ⚪ **Unavailable** - Will receive SMS/email instead
+  </Step>
+  
+  <Step title="Manual Re-check (Optional)">
+    Select leads and click **Check Availability** to re-verify
+  </Step>
+</Steps>
+
+<Tip>
+**Pro Tip:** Availability checks take 5-10 seconds per lead. The system processes them automatically in the background.
+</Tip>
+
+---
+
+## Step 4: Send Your First Message
+
+Let's send your first message! Choose your preferred method:
+
+<Tabs>
+  <Tab title="Quick Send">
+    **Best for:** Testing or one-off messages
+    
+    <Steps>
+      <Step title="Open Quick Send">
+        Click **Quick Send** button in the top nav
+      </Step>
+      
+      <Step title="Enter Recipient">
+        Type a phone number with country code:
+        
+        `+12025551234`
+      </Step>
+      
+      <Step title="Wait for Availability Check">
+        System automatically checks if recipient supports iMessage (5 seconds)
+      </Step>
+      
+      <Step title="Compose Message">
+        Type your message:
+        
+        "Hi! This is a test message from Tuco AI."
+      </Step>
+      
+      <Step title="Send">
+        Click **Send Now** - Your first message is on its way! 🚀
+      </Step>
+    </Steps>
+  </Tab>
+  
+  <Tab title="Send to Leads">
+    **Best for:** Organized campaigns
+    
+    <Steps>
+      <Step title="Select Leads">
+        Go to **Leads** page and select one or more leads (checkboxes)
+      </Step>
+      
+      <Step title="Open Message Composer">
+        Click **Send Message** in the toolbar
+      </Step>
+      
+      <Step title="Compose Message">
+        Type your message - same for all selected leads
+      </Step>
+      
+      <Step title="Choose Delivery">
+        - **Send Now** - Immediate delivery
+        - **Schedule** - Pick date and time
+      </Step>
+      
+      <Step title="Send Campaign">
+        Click **Send** - Messages are sent sequentially
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Check>
+**Success!** You've sent your first message with Tuco AI 🎉
+</Check>
+
+---
+
+## Step 5: Track Your Messages
+
+Monitor delivery status and engagement:
+
+<Steps>
+  <Step title="Open Messages Dashboard">
+    Navigate to **Messages** page
+  </Step>
+  
+  <Step title="View Message Status">
+    See all sent messages with status:
+    - ✅ **Sent** - Successfully delivered
+    - 📅 **Scheduled** - Queued for future
+    - ❌ **Failed** - Delivery error
+  </Step>
+  
+  <Step title="Filter & Search">
+    Use filters to find specific messages:
+    - By status
+    - By date range
+    - By recipient
+    - By message type
+  </Step>
+</Steps>
+
+---
+
+## Next Steps
+
+Now that you've sent your first message, explore these features:
+
+<CardGroup cols={2}>
+  <Card
+    title="Import from HubSpot"
+    icon="hubspot"
+    href="/features/upload-leads#hubspot-integration"
+  >
+    Sync contacts automatically from HubSpot
+  </Card>
+  
+  <Card
+    title="Schedule Campaigns"
+    icon="calendar-days"
+    href="/features/send-messages#scheduling-messages"
+  >
+    Schedule messages for optimal timing
+  </Card>
+  
+  <Card
+    title="Bulk Operations"
+    icon="users-gear"
+    href="/features/check-availability#bulk-checking"
+  >
+    Check availability for thousands of leads
+  </Card>
+  
+  <Card
+    title="API Integration"
+    icon="code"
+    href="/api-reference/introduction"
+  >
+    Build custom integrations with our API
+  </Card>
+</CardGroup>
+
+---
+
+## Common Questions
+
+<AccordionGroup>
+  <Accordion title="How long does availability checking take?" icon="clock">
+    **5-10 seconds per lead.** The system checks all addresses (phone + email + alternates) and stops at the first available one. Bulk checks are processed sequentially in the background.
+  </Accordion>
+    
+  <Accordion title="What happens if iMessage isn't available?" icon="circle-question">
+    **Messages automatically fallback to SMS or email.** The system uses the best available delivery method based on your recipient's capabilities.
+  </Accordion>
+    
+  <Accordion title="Can I schedule messages for later?" icon="calendar">
+    **Yes!** When composing a message, choose "Send Later" and pick your preferred date and time. Messages are processed by a cron job that runs every minute.
+  </Accordion>
+
+  <Accordion title="How do I know if my message was delivered?" icon="circle-check">
+    **Check the Messages dashboard.** Each message shows real-time status: Sent, Failed, Scheduled, or Cancelled. Failed messages include error details.
+  </Accordion>
+
+  <Accordion title="What's the difference between Quick Send and Send to Leads?" icon="arrows-split-up-and-left">
+    **Quick Send** is for one-off messages without creating lead records (great for testing).
+    
+    **Send to Leads** is for organized campaigns with full tracking and list management.
+</Accordion>
+  
+  <Accordion title="How many messages can I send at once?" icon="envelope-open-text">
+    **Depends on your plan:**
+    - Free: 100 messages/day
+    - Pro: 1,000 messages/day
+    - Enterprise: Unlimited
+    
+    All plans support bulk sending - just select multiple leads!
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Need Help?
+
+<CardGroup cols={3}>
+  <Card
+    title="Documentation"
+    icon="book"
+    href="/features/upload-leads"
+  >
+    Comprehensive guides
+  </Card>
+  
+  <Card
+    title="Email Support"
+    icon="envelope"
+    href="mailto:support@tuco.ai"
+  >
+    support@tuco.ai
+  </Card>
+  
+  <Card
+    title="Community"
+    icon="discord"
+    href="https://discord.gg/tuco"
+  >
+    Join our Discord
+  </Card>
+</CardGroup>
+
+---
+
+## Quick Tips
+
+<CardGroup cols={2}>
+  <Card title="✅ Do" icon="circle-check">
+    - Check availability before bulk sending
+    - Use templates for consistent messaging
+    - Schedule campaigns for optimal times
+    - Export data regularly for backups
+</Card>
+
+  <Card title="❌ Don't" icon="circle-xmark">
+    - Send without checking availability
+    - Spam recipients with multiple messages
+    - Use all caps or excessive punctuation
+    - Send without consent from recipients
+</Card>
+</CardGroup>
+
+---
+
+<Card
+  title="🚀 Ready to scale?"
+  icon="rocket"
+  href="https://app.tuco.ai/pricing"
+>
+  Upgrade to Pro for advanced features, higher limits, and priority support
+</Card>

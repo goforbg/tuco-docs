@@ -1,4 +1,567 @@
 ---
-title: 'New Plant'
-openapi: 'WEBHOOK /plant/webhook'
+title: "Webhooks"
+api: "POST https://your-domain.com/webhook"
+description: "Receive real-time notifications for events in your Tuco AI workspace"
 ---
+
+## Overview
+
+Webhooks allow you to receive real-time HTTP notifications when specific events occur in your Tuco AI account. Configure webhook endpoints to automate workflows, sync data with external systems, and build custom integrations.
+
+<Info>
+**How Webhooks Work:** When an event occurs (like a message being sent), Tuco sends an HTTP POST request to your configured webhook URL with event details.
+</Info>
+
+---
+
+## Setup Webhooks
+
+### Via Dashboard
+
+<Steps>
+  <Step title="Navigate to Settings">
+    Go to **Settings → Webhooks** in your dashboard
+  </Step>
+  
+  <Step title="Add Webhook URL">
+    Click **Add Webhook** and enter your endpoint URL
+  </Step>
+  
+  <Step title="Select Events">
+    Choose which events should trigger this webhook
+  </Step>
+  
+  <Step title="Configure Security">
+    Copy your webhook secret for signature verification
+  </Step>
+  
+  <Step title="Test & Activate">
+    Test the webhook and activate it
+  </Step>
+</Steps>
+
+### Via API
+
+```bash
+POST /api/webhooks
+```
+
+**Request:**
+
+```json
+{
+  "url": "https://your-domain.com/webhook",
+  "events": [
+    "lead.created",
+    "message.sent",
+    "message.failed"
+  ],
+  "description": "Production webhook endpoint",
+  "active": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "webhook": {
+    "_id": "507f1f77bcf86cd799439011",
+    "url": "https://your-domain.com/webhook",
+    "events": ["lead.created", "message.sent", "message.failed"],
+    "secret": "whsec_xxxxxxxxxxxxxxxx",
+    "active": true,
+    "createdAt": "2025-10-14T10:30:00Z"
+  }
+}
+```
+
+---
+
+## Available Events
+
+### Lead Events
+
+<ParamField path="lead.created" type="event">
+  Triggered when a new lead is added to your workspace
+  
+  **Payload includes:** Lead object with all fields
+</ParamField>
+
+<ParamField path="lead.updated" type="event">
+  Triggered when lead information is modified
+  
+  **Payload includes:** Updated lead object and changed fields
+</ParamField>
+
+<ParamField path="lead.deleted" type="event">
+  Triggered when a lead is removed
+  
+  **Payload includes:** Deleted lead ID and deletion timestamp
+</ParamField>
+
+### Availability Events
+
+<ParamField path="availability.checked" type="event">
+  Triggered when availability check completes
+  
+  **Payload includes:** Lead ID, availability status, checked addresses
+</ParamField>
+
+<ParamField path="availability.changed" type="event">
+  Triggered when a lead's availability status changes
+  
+  **Payload includes:** Lead ID, old status, new status
+</ParamField>
+
+### Message Events
+
+<ParamField path="message.sent" type="event">
+  Triggered when a message is successfully delivered
+  
+  **Payload includes:** Message object, recipient, delivery timestamp
+</ParamField>
+
+<ParamField path="message.failed" type="event">
+  Triggered when message delivery fails
+  
+  **Payload includes:** Message object, error details, failure reason
+</ParamField>
+
+<ParamField path="message.scheduled" type="event">
+  Triggered when a message is scheduled for future delivery
+  
+  **Payload includes:** Message object, scheduled time
+</ParamField>
+
+<ParamField path="message.cancelled" type="event">
+  Triggered when a scheduled message is cancelled
+  
+  **Payload includes:** Message ID, cancellation reason
+</ParamField>
+
+### List Events
+
+<ParamField path="list.created" type="event">
+  Triggered when a new list is created
+  
+  **Payload includes:** List object with metadata
+</ParamField>
+
+<ParamField path="list.updated" type="event">
+  Triggered when a list is modified
+  
+  **Payload includes:** Updated list object
+</ParamField>
+
+---
+
+## Webhook Payload Structure
+
+All webhook payloads follow this structure:
+
+```json
+{
+  "id": "evt_1234567890",
+  "type": "message.sent",
+  "created": 1634567890,
+  "data": {
+    // Event-specific data
+  },
+  "workspace": {
+    "id": "ws_xxxxx",
+    "name": "Your Workspace"
+  }
+}
+```
+
+### Common Fields
+
+<ResponseField name="id" type="string">
+  Unique event identifier (for deduplication)
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Event type (see Available Events)
+</ResponseField>
+
+<ResponseField name="created" type="integer">
+  Unix timestamp when event occurred
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Event-specific payload data
+</ResponseField>
+
+<ResponseField name="workspace" type="object">
+  Your workspace information
+</ResponseField>
+
+---
+
+## Event Examples
+
+### Lead Created
+
+```json
+{
+  "id": "evt_lead_created_123",
+  "type": "lead.created",
+  "created": 1634567890,
+  "data": {
+    "lead": {
+      "_id": "507f1f77bcf86cd799439011",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+12025551234",
+      "companyName": "Acme Corp",
+      "lists": ["507f1f77bcf86cd799439012"],
+      "createdAt": "2025-10-14T10:30:00Z"
+    },
+    "source": "csv_import"
+  },
+  "workspace": {
+    "id": "ws_xxxxx",
+    "name": "Your Workspace"
+  }
+}
+```
+
+### Message Sent
+
+```json
+{
+  "id": "evt_message_sent_456",
+  "type": "message.sent",
+  "created": 1634567890,
+  "data": {
+    "message": {
+      "_id": "507f1f77bcf86cd799439013",
+      "message": "Hello! This is a test message.",
+      "messageType": "imessage",
+      "status": "sent",
+      "recipientPhone": "+12025551234",
+      "recipientName": "John Doe",
+      "leadId": "507f1f77bcf86cd799439011",
+      "sentAt": "2025-10-14T10:31:00Z"
+    }
+  },
+  "workspace": {
+    "id": "ws_xxxxx",
+    "name": "Your Workspace"
+  }
+}
+```
+
+### Message Failed
+
+```json
+{
+  "id": "evt_message_failed_789",
+  "type": "message.failed",
+  "created": 1634567890,
+  "data": {
+    "message": {
+      "_id": "507f1f77bcf86cd799439014",
+      "message": "Test message",
+      "messageType": "imessage",
+      "status": "failed",
+      "recipientPhone": "+12025551234",
+      "failedAt": "2025-10-14T10:32:00Z"
+    },
+    "error": {
+      "code": "DELIVERY_FAILED",
+      "message": "Recipient not reachable",
+      "details": "Network timeout after 3 retries"
+    }
+  },
+  "workspace": {
+    "id": "ws_xxxxx",
+    "name": "Your Workspace"
+  }
+}
+```
+
+### Availability Checked
+
+```json
+{
+  "id": "evt_availability_checked_101",
+  "type": "availability.checked",
+  "created": 1634567890,
+  "data": {
+    "lead": {
+      "_id": "507f1f77bcf86cd799439011",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "availabilityStatus": "available",
+    "checkedAddresses": [
+      {
+        "address": "+12025551234",
+        "type": "phone",
+        "available": true
+      }
+    ],
+    "checkedAt": "2025-10-14T10:33:00Z"
+  },
+  "workspace": {
+    "id": "ws_xxxxx",
+    "name": "Your Workspace"
+  }
+}
+```
+
+---
+
+## Security & Verification
+
+### Webhook Signatures
+
+All webhook requests include a signature in the `X-Tuco-Signature` header for verification.
+
+**Header Format:**
+
+```
+X-Tuco-Signature: t=1634567890,v1=a2114d57b48eac39b9ad189dd8316235a7b4a8d21a10bd27519666489c69b503
+```
+
+### Verify Signature (Node.js)
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhookSignature(payload, signature, secret) {
+  const elements = signature.split(',');
+  const timestamp = elements[0].split('=')[1];
+  const receivedSignature = elements[1].split('=')[1];
+  
+  const signedPayload = `${timestamp}.${JSON.stringify(payload)}`;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(signedPayload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(expectedSignature),
+    Buffer.from(receivedSignature)
+  );
+}
+
+// Usage in Express
+app.post('/webhook', (req, res) => {
+  const signature = req.headers['x-tuco-signature'];
+  const isValid = verifyWebhookSignature(
+    req.body,
+    signature,
+    process.env.WEBHOOK_SECRET
+  );
+  
+  if (!isValid) {
+    return res.status(401).send('Invalid signature');
+  }
+  
+  // Process webhook
+  console.log('Event:', req.body.type);
+  res.status(200).send('OK');
+});
+```
+
+### Verify Signature (Python)
+
+```python
+import hmac
+import hashlib
+import json
+
+def verify_webhook_signature(payload, signature, secret):
+    elements = signature.split(',')
+    timestamp = elements[0].split('=')[1]
+    received_signature = elements[1].split('=')[1]
+    
+    signed_payload = f"{timestamp}.{json.dumps(payload)}"
+    expected_signature = hmac.new(
+        secret.encode(),
+        signed_payload.encode(),
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(expected_signature, received_signature)
+
+# Usage in Flask
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Tuco-Signature')
+    is_valid = verify_webhook_signature(
+        request.json,
+        signature,
+        os.environ['WEBHOOK_SECRET']
+    )
+    
+    if not is_valid:
+        return 'Invalid signature', 401
+    
+    # Process webhook
+    print('Event:', request.json['type'])
+    return 'OK', 200
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Verify Signatures" icon="shield-check">
+    Always verify webhook signatures to ensure requests are from Tuco and haven't been tampered with.
+  </Accordion>
+  
+  <Accordion title="Return 200 Quickly" icon="gauge-high">
+    Respond with HTTP 200 within 5 seconds. Process heavy operations asynchronously.
+  </Accordion>
+  
+  <Accordion title="Handle Duplicates" icon="copy">
+    Use the event `id` to deduplicate webhook events in case of retries.
+  </Accordion>
+  
+  <Accordion title="Implement Retry Logic" icon="rotate">
+    If your endpoint fails, Tuco will retry with exponential backoff up to 3 times.
+  </Accordion>
+  
+  <Accordion title="Use HTTPS" icon="lock">
+    Webhook URLs must use HTTPS for security. HTTP endpoints are not supported.
+  </Accordion>
+  
+  <Accordion title="Monitor & Log" icon="chart-line">
+    Log all webhook events for debugging and audit purposes.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Retry Behavior
+
+If your webhook endpoint fails (non-200 response or timeout), Tuco will retry:
+
+<Steps>
+  <Step title="Immediate Retry">
+    First retry after 1 minute
+  </Step>
+  
+  <Step title="Second Retry">
+    Second retry after 5 minutes
+  </Step>
+  
+  <Step title="Final Retry">
+    Final retry after 30 minutes
+  </Step>
+  
+  <Step title="Disabled">
+    After 3 failed attempts, webhook is automatically disabled
+  </Step>
+</Steps>
+
+<Warning>
+**Webhook Disabled:** You'll receive an email notification if your webhook is disabled due to repeated failures.
+</Warning>
+
+---
+
+## Testing Webhooks
+
+### Via Dashboard
+
+1. Go to **Settings → Webhooks**
+2. Click **Test** next to your webhook
+3. Select an event type
+4. View the test payload and response
+
+### Via API
+
+```bash
+POST /api/webhooks/{webhookId}/test
+```
+
+**Request:**
+
+```json
+{
+  "eventType": "message.sent"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "sent": true,
+  "statusCode": 200,
+  "response": "OK",
+  "latency": 145
+}
+```
+
+---
+
+## Managing Webhooks
+
+### List All Webhooks
+
+```bash
+GET /api/webhooks
+```
+
+### Update Webhook
+
+```bash
+PATCH /api/webhooks/{webhookId}
+```
+
+### Delete Webhook
+
+```bash
+DELETE /api/webhooks/{webhookId}
+```
+
+### View Webhook Logs
+
+```bash
+GET /api/webhooks/{webhookId}/logs
+```
+
+---
+
+## Common Issues
+
+<AccordionGroup>
+  <Accordion title="Webhook Not Receiving Events" icon="circle-exclamation">
+    **Checks:**
+    - Verify webhook is active
+    - Ensure URL is accessible from internet
+    - Check firewall/security groups allow incoming requests
+    - Verify HTTPS certificate is valid
+  </Accordion>
+  
+  <Accordion title="Signature Verification Failing" icon="shield-xmark">
+    **Solutions:**
+    - Use the correct webhook secret
+    - Verify timestamp is within 5 minutes
+    - Check payload is unmodified
+    - Use raw request body for signature verification
+  </Accordion>
+  
+  <Accordion title="Webhook Disabled Automatically" icon="ban">
+    **Reasons:**
+    - Endpoint returning non-200 responses
+    - Endpoint timing out (>5 seconds)
+    - SSL/HTTPS errors
+    
+    **Fix:** Resolve endpoint issues and re-enable in dashboard
+  </Accordion>
+</AccordionGroup>

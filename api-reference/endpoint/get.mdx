@@ -1,4 +1,479 @@
 ---
-title: 'Get Plants'
-openapi: 'GET /plants'
+title: "Get Leads"
+api: "GET /api/leads"
+description: "Retrieve lead data from your workspace"
 ---
+
+## Overview
+
+Retrieve one or more leads from your Tuco AI workspace. Supports filtering, pagination, and search capabilities.
+
+---
+
+## Get All Leads
+
+Retrieve a paginated list of all leads in your workspace.
+
+### Endpoint
+
+```
+GET /api/leads
+```
+
+### Query Parameters
+
+<ParamField query="page" type="integer" default="1">
+  Page number to retrieve
+</ParamField>
+
+<ParamField query="limit" type="integer" default="50">
+  Number of leads per page (max: 100)
+</ParamField>
+
+<ParamField query="listId" type="string">
+  Filter leads by list ID
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search leads by name, email, or phone
+</ParamField>
+
+<ParamField query="availabilityStatus" type="string">
+  Filter by iMessage availability status
+  
+  Values: `available`, `unavailable`, `checking`, `error`, `no_active_line`
+</ParamField>
+
+<ParamField query="sort" type="string" default="createdAt">
+  Sort field
+  
+  Values: `createdAt`, `updatedAt`, `firstName`, `lastName`
+</ParamField>
+
+<ParamField query="order" type="string" default="desc">
+  Sort order
+  
+  Values: `asc`, `desc`
+</ParamField>
+
+---
+
+## Get Single Lead
+
+Retrieve a specific lead by ID.
+
+### Endpoint
+
+```
+GET /api/leads/{leadId}
+```
+
+### Path Parameters
+
+<ParamField path="leadId" type="string" required>
+  Unique identifier of the lead
+</ParamField>
+
+---
+
+## Check Lead Availability
+
+Check or re-check iMessage availability for a lead.
+
+### Endpoint
+
+```
+GET /api/leads/check-availability?id={leadId}
+```
+
+### Query Parameters
+
+<ParamField query="id" type="string" required>
+  Lead ID to check availability for
+</ParamField>
+
+---
+
+## Response
+
+### List Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the operation was successful
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  Array of lead objects
+  
+  <Expandable title="Lead Object">
+    <ResponseField name="_id" type="string">
+      Unique lead identifier
+    </ResponseField>
+    
+    <ResponseField name="firstName" type="string">
+      Lead's first name
+    </ResponseField>
+    
+    <ResponseField name="lastName" type="string">
+      Lead's last name
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Primary email address
+    </ResponseField>
+    
+    <ResponseField name="phone" type="string">
+      Primary phone number
+    </ResponseField>
+    
+    <ResponseField name="altPhone1" type="string">
+      Alternate phone 1
+    </ResponseField>
+    
+    <ResponseField name="altPhone2" type="string">
+      Alternate phone 2
+    </ResponseField>
+    
+    <ResponseField name="altPhone3" type="string">
+      Alternate phone 3
+    </ResponseField>
+    
+    <ResponseField name="altEmail1" type="string">
+      Alternate email 1
+    </ResponseField>
+    
+    <ResponseField name="altEmail2" type="string">
+      Alternate email 2
+    </ResponseField>
+    
+    <ResponseField name="altEmail3" type="string">
+      Alternate email 3
+    </ResponseField>
+    
+    <ResponseField name="companyName" type="string">
+      Company name
+    </ResponseField>
+    
+    <ResponseField name="jobTitle" type="string">
+      Job title
+    </ResponseField>
+    
+    <ResponseField name="linkedinUrl" type="string">
+      LinkedIn profile URL
+    </ResponseField>
+    
+    <ResponseField name="notes" type="string">
+      Additional notes
+    </ResponseField>
+    
+    <ResponseField name="customFields" type="object">
+      Custom field key-value pairs
+    </ResponseField>
+    
+    <ResponseField name="availabilityStatus" type="string">
+      iMessage availability status
+    </ResponseField>
+    
+    <ResponseField name="lists" type="array">
+      Array of list IDs this lead belongs to
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="datetime">
+      Creation timestamp
+    </ResponseField>
+    
+    <ResponseField name="updatedAt" type="datetime">
+      Last update timestamp
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object">
+  Pagination information
+  
+  <Expandable title="Pagination Object">
+    <ResponseField name="page" type="integer">
+      Current page number
+    </ResponseField>
+    
+    <ResponseField name="limit" type="integer">
+      Items per page
+    </ResponseField>
+    
+    <ResponseField name="totalPages" type="integer">
+      Total number of pages
+    </ResponseField>
+    
+    <ResponseField name="totalItems" type="integer">
+      Total number of leads
+    </ResponseField>
+    
+    <ResponseField name="hasNext" type="boolean">
+      Whether there's a next page
+    </ResponseField>
+    
+    <ResponseField name="hasPrev" type="boolean">
+      Whether there's a previous page
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
+## Examples
+
+<RequestExample>
+
+```bash Get All Leads
+curl -X GET "https://api.tuco.ai/v1/api/leads?page=1&limit=50" \
+  -H "Authorization: Bearer clerk_token_xxxxx"
+```
+
+```bash Get Single Lead
+curl -X GET "https://api.tuco.ai/v1/api/leads/507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer clerk_token_xxxxx"
+```
+
+```bash Filter by List
+curl -X GET "https://api.tuco.ai/v1/api/leads?listId=507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer clerk_token_xxxxx"
+```
+
+```bash Search Leads
+curl -X GET "https://api.tuco.ai/v1/api/leads?search=john&limit=25" \
+  -H "Authorization: Bearer clerk_token_xxxxx"
+```
+
+```bash Check Availability
+curl -X GET "https://api.tuco.ai/v1/api/leads/check-availability?id=507f1f77bcf86cd799439011" \
+  -H "Authorization: Bearer clerk_token_xxxxx"
+```
+
+```javascript Node.js
+const axios = require('axios');
+
+const getLeads = async () => {
+  try {
+    const response = await axios.get('https://api.tuco.ai/v1/api/leads', {
+      params: {
+        page: 1,
+        limit: 50,
+        availabilityStatus: 'available'
+      },
+      headers: {
+        'Authorization': 'Bearer clerk_token_xxxxx'
+      }
+    });
+    
+    console.log('Leads:', response.data);
+    console.log('Pagination:', response.data.pagination);
+  } catch (error) {
+    console.error('Error:', error.response.data);
+  }
+};
+
+getLeads();
+```
+
+```python Python
+import requests
+
+url = 'https://api.tuco.ai/v1/api/leads'
+headers = {
+    'Authorization': 'Bearer clerk_token_xxxxx'
+}
+params = {
+    'page': 1,
+    'limit': 50,
+    'availabilityStatus': 'available'
+}
+
+response = requests.get(url, headers=headers, params=params)
+
+if response.status_code == 200:
+    data = response.json()
+    print('Leads:', data['data'])
+    print('Pagination:', data['pagination'])
+else:
+    print('Error:', response.json())
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json List Response
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+12025551234",
+      "companyName": "Acme Corp",
+      "jobTitle": "CEO",
+      "customFields": {
+        "industry": "Technology",
+        "revenue": "1M-5M"
+      },
+      "availabilityStatus": "available",
+      "lists": ["507f1f77bcf86cd799439012"],
+      "createdAt": "2025-10-14T10:30:00Z",
+      "updatedAt": "2025-10-14T10:30:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "totalPages": 5,
+    "totalItems": 247,
+    "hasNext": true,
+    "hasPrev": false
+  }
+}
+```
+
+```json Single Lead Response
+{
+  "success": true,
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "phone": "+12025551234",
+    "altPhone1": "+12025555678",
+    "companyName": "Acme Corp",
+    "jobTitle": "CEO",
+    "linkedinUrl": "https://linkedin.com/in/johndoe",
+    "notes": "VIP client",
+    "customFields": {
+      "industry": "Technology",
+      "revenue": "1M-5M"
+    },
+    "availabilityStatus": "available",
+    "lists": ["507f1f77bcf86cd799439012"],
+    "createdAt": "2025-10-14T10:30:00Z",
+    "updatedAt": "2025-10-14T10:30:00Z"
+  }
+}
+```
+
+```json Availability Check Response
+{
+  "success": true,
+  "leadId": "507f1f77bcf86cd799439011",
+  "available": true,
+  "status": "available"
+}
+```
+
+```json Error - Not Found
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Lead not found"
+  }
+}
+```
+
+</ResponseExample>
+
+---
+
+## Error Codes
+
+| Code | Status | Description | Solution |
+|------|--------|-------------|----------|
+| `400` | Bad Request | Invalid query parameters | Check parameter formats |
+| `401` | Unauthorized | Invalid auth token | Verify Authorization header |
+| `404` | Not Found | Lead not found | Check lead ID is correct |
+| `429` | Too Many Requests | Rate limit exceeded | Implement rate limiting |
+| `500` | Internal Server Error | Server error | Contact support if persists |
+
+---
+
+## Filtering & Search
+
+### By Availability Status
+
+Filter leads by their iMessage availability:
+
+```bash
+GET /api/leads?availabilityStatus=available
+```
+
+### By List
+
+Get all leads in a specific list:
+
+```bash
+GET /api/leads?listId=507f1f77bcf86cd799439011
+```
+
+### Search
+
+Search across name, email, and phone fields:
+
+```bash
+GET /api/leads?search=john
+```
+
+<Tip>
+**Combine filters** for more specific queries:
+
+```bash
+GET /api/leads?listId=abc123&availabilityStatus=available&search=tech
+```
+</Tip>
+
+---
+
+## Pagination
+
+Navigate through large datasets efficiently:
+
+### First Page
+```bash
+GET /api/leads?page=1&limit=25
+```
+
+### Next Page
+```bash
+GET /api/leads?page=2&limit=25
+```
+
+### Last Page
+Use `totalPages` from response:
+```bash
+GET /api/leads?page=10&limit=25
+```
+
+<Info>
+**Best Practice:** Start with smaller page sizes (25-50) and adjust based on your needs. Maximum limit is 100 items per page.
+</Info>
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Pagination" icon="list-ol">
+    Always use pagination when retrieving large datasets to avoid timeouts and improve performance.
+  </Accordion>
+  
+  <Accordion title="Filter Server-Side" icon="filter">
+    Use query parameters to filter data on the server rather than fetching everything and filtering client-side.
+  </Accordion>
+  
+  <Accordion title="Cache Results" icon="database">
+    Cache frequently accessed lead data to reduce API calls and improve application performance.
+  </Accordion>
+  
+  <Accordion title="Handle Missing Fields" icon="shield-halved">
+    Not all leads have all optional fields. Always check for field existence before using values.
+  </Accordion>
+</AccordionGroup>
