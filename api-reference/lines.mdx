@@ -1,0 +1,129 @@
+---
+title: "Lines API"
+description: "How Tuco AI exposes your sending identities through the API"
+icon: "phone"
+---
+
+## What the Lines API Does
+
+Lines represent the sending identities you see in Tuco, such as phone numbers or email addresses configured for outreach.
+
+Through the API, you can:
+
+- See which lines are available to your workspace.
+- Understand, at a glance, how actively each line is being used.
+- Decide which line your own systems should reference when sending.
+
+The system automatically keeps these views in sync with the Tuco dashboard, so you are always looking at the same set of lines in both places.
+
+---
+
+## Information You Can Rely On
+
+For each line, the API surfaces:
+
+- A stable identifier you can store and reuse when sending messages.
+- Basic profile details, such as display information.
+- Simple usage indicators that reflect how the line is being used over recent periods.
+
+Data is preserved safely, so previously returned line identifiers remain valid as long as the underlying line exists in your workspace.
+
+---
+
+## Using Lines with Other APIs
+
+When you send messages or design integrations, you can point to a specific line using the identifiers returned here.
+
+Once a message request that references a line is accepted, Tuco ensures that:
+
+- The message is associated with the chosen line in the UI.
+- Future reporting and exports reflect that relationship.
+
+No action is required from you to keep this linkage intact; it is handled automatically by the system.
+
+---
+
+## Fetch All Lines (API Key)
+
+### Endpoint
+
+- **Method**: `GET`
+- **Path**: `/api/lines/by-user`
+- **Auth**: Tuco API key or Clerk token (via `authenticateRequest`)
+
+### Behavior
+
+Returns all lines for the authenticated workspace, including basic profile information, per‑day usage, and any public health information Tuco exposes.
+
+### Example
+
+```bash
+GET /api/lines/by-user
+Authorization: Bearer tuco_xxx
+```
+
+### Response
+
+```json
+{
+  "lines": [
+    {
+      "_id": "667f1f77bcf86cd799439011",
+      "workspaceId": "org_123",
+      "firstName": "Sales",
+      "lastName": "Team 1",
+      "phone": "+12025551234",
+      "email": "sales+1@example.com",
+      "isActive": true,
+      "provisioningStatus": "active",
+      "dailyNewConversationsLimit": 20,
+      "dailyTotalMessagesLimit": 150,
+      "usage": {
+        "date": "2025-10-14",
+        "newConversationsCount": 3,
+        "totalMessagesCount": 42
+      },
+      "healthCheck": {
+        "status": "healthy",
+        "lastCheckedAt": "2025-10-14T10:00:00Z"
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Check Health of a Line
+
+### Endpoint
+
+- **Method**: `GET`
+- **Path**: `/api/lines/check-availability?id={lineId}`
+- **Auth**: Clerk (Tuco dashboard or trusted backend using Clerk tokens)
+
+This endpoint performs a fresh health check for a specific line (server ping + iMessage availability) and updates the line’s health status.
+
+### Example
+
+```bash
+GET /api/lines/check-availability?id=667f1f77bcf86cd799439011
+Authorization: Bearer <clerk_token>
+```
+
+### Response (success)
+
+```json
+{
+  "success": true,
+  "lineId": "667f1f77bcf86cd799439011",
+  "status": "healthy",
+  "failures": [],
+  "checkedAt": "2025-10-14T10:30:00Z",
+  "shouldNotify": false,
+  "notificationSent": false
+}
+```
+
+If the line is not active or lacks the necessary configuration, you receive a `400` with a descriptive error; on auth failure you receive `401`.
+

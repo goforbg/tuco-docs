@@ -1,0 +1,295 @@
+---
+title: "FAQ & Troubleshooting"
+description: "Answers to common questions about Tuco AI campaigns, availability, workers, webhooks, failures, and integrations"
+icon: "circle-question"
+---
+
+## General Usage
+
+<AccordionGroup>
+  <Accordion title="What is a 'line' in Tuco AI?" icon="phone">
+    A **line** is your sending identity in Tuco AI.
+
+    - It represents a specific phone/email/iMessage identity.
+    - Each line has:
+      - Daily new conversations and total message limits.
+      - Health status (healthy/unhealthy).
+      - Usage counters for the current day.
+
+    When sending via the API or campaigns, you must choose a `fromLineId`.  
+    Use `/api/lines/by-user` to list and filter active, healthy lines.
+  </Accordion>
+
+  <Accordion title="What's the difference between Quick Send and sending to leads?" icon="bolt">
+    **Quick Send**:
+    - One-off message, no need to create a lead.
+    - Ideal for testing or ad-hoc outreach.
+    - Can still use availability checks and scheduling.
+
+    **Send to Leads**:
+    - Uses leads stored in Tuco.
+    - Integrated with availability, campaigns, and reporting.
+    - Best for repeatable, large-scale outreach.
+  </Accordion>
+
+  <Accordion title="How does Tuco choose between iMessage, SMS, and email?" icon="arrows-rotate">
+    Tuco uses a combination of:
+
+    - **Availability checks** to determine iMessage support per address.
+    - **Message type** (`imessage`, `sms`, `email`) you specify.
+    - **Fallback rules** when iMessage is unavailable.
+
+    See `/features/check-availability` and `/features/failures-and-fallbacks` for the complete decision logic.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Availability & Fallbacks
+
+<AccordionGroup>
+  <Accordion title="How does iMessage availability checking work?" icon="circle-check">
+    Tuco checks all available contact addresses for a lead in a prioritized order:
+
+    1. Primary phone  
+    2. Primary email  
+    3. Alt phones (1–3)  
+    4. Alt emails (1–3)
+
+    It queries your configured iMessage bridge and stops at the **first address that supports iMessage**.  
+
+    If none support iMessage:
+
+    - The lead is marked as "unavailable" for iMessage.
+    - Campaigns and Quick Send can fallback to SMS/email depending on your settings.
+  </Accordion>
+
+  <Accordion title="What happens if a recipient does not have iMessage?" icon="arrow-right-arrow-left">
+    When the system determines that a recipient (across all their addresses) does **not** support iMessage:
+
+    - The worker emits a `message.fallback` webhook with:
+      - `event: "message.fallback"`
+      - A `reason` string describing why iMessage is unavailable.
+      - `checkedAddresses` for debugging.
+    - Your app can then:
+      - Route the message via SMS or email.
+      - Flag the lead's iMessage availability as unavailable.
+  </Accordion>
+
+  <Accordion title="Do availability checks ever mark a message as 'failed'?" icon="triangle-exclamation">
+    No. Availability checks are used to choose routes and mark leads' capabilities.
+
+    - Messages are typically:
+      - Sent via iMessage if available.
+      - Marked as `fallback` when iMessage is unavailable.
+    - Availability logic itself does **not** cause messages to be marked `failed`; health and provider errors do.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Campaigns & Workers
+
+<AccordionGroup>
+  <Accordion title="How often are campaigns processed?" icon="clock">
+    Campaigns are processed by workers using **BullMQ repeatable jobs**:
+
+    - A job runs roughly every few minutes (e.g. ~7 minutes).
+    - Each run:
+      - Evaluates all active campaigns.
+      - Applies line limits, time windows, and gaps.
+      - Moves eligible messages from `queued` to `pending`.
+
+    Actual sending (`pending → sent`) happens in separate worker jobs that run continuously.
+  </Accordion>
+
+  <Accordion title="Why are many campaign messages stuck in 'queued'?" icon="circle-pause">
+    Common causes:
+
+    - Daily limits reached for one or more lines:
+      - `dailyNewConversationsLimit` exceeded.
+      - `dailyTotalMessagesLimit` exceeded.
+    - Your configured **time window** has not opened yet.
+    - The current day is not in **allowed days of week**.
+    - Gap enforcement between contacts on a line has not been satisfied.
+
+    These are **normal throttling conditions**, not failures. Messages remain `queued` and will be retried in future worker runs.
+  </Accordion>
+
+  <Accordion title="Can a queued message become 'failed' just because limits are reached?" icon="ban">
+    No. Hitting:
+
+    - Daily new conversation limits,
+    - Daily total message limits,
+    - Time windows,
+    - Allowed days of week, or
+    - Gap constraints
+
+    does **not** directly cause a message to become `failed`. Instead, the message remains `queued` until conditions allow it to be processed.
+  </Accordion>
+
+  <Accordion title="When do campaigns complete?" icon="flag-checkered">
+    A campaign completes when **all of its messages** are in a terminal state:
+
+    - `sent`
+    - `delivered`
+    - `failed`
+    - `cancelled`
+
+    Workers periodically call a check (e.g. `checkAndCompleteCampaign`) to:
+
+    - Scan message states.
+    - Flip campaign status to `completed` when no `queued` or `pending` messages remain.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Line Health & Failures
+
+<AccordionGroup>
+  <Accordion title="What happens if a line goes offline during a campaign?" icon="signal-slash">
+    Tuco applies explicit rules:
+
+    1. For a lead that already **received prior messages** from that line:
+       - Remaining queued messages for that lead on the failed line are marked `failed`.
+       - Reason: "Line became inactive after previous messages were sent".
+       - We **do not** reassign to a different line to preserve conversation continuity.
+
+    2. For leads with only queued (never sent) messages on that line:
+       - Messages are **reassigned** to another active line in the campaign, if one exists.
+
+    3. If all lines in a campaign fail:
+       - The campaign is paused until at least one line is healthy again.
+  </Accordion>
+
+  <Accordion title="Why do I see many 'failed' statuses?" icon="hexagon-xmark">
+    Likely causes:
+
+    - Persistent line health issues (device/app offline, misconfigured server URL).
+    - Provider-level hard errors (invalid numbers/emails, blocked sends).
+    - Misconfigured workers endpoint for message webhooks or health checks.
+
+    Investigate:
+
+    - Line health in your Tuco dashboard.
+    - Worker logs for error messages.
+    - Underlying iMessage/SMS provider status.
+  </Accordion>
+
+  <Accordion title="How do per-line limits interact with multiple campaigns?" icon="layer-group">
+    Limits are per line, per day:
+
+    - Multiple campaigns can share the same lines.
+    - Workers compute usage across **all messages** from a line when deciding if a new message is allowed.
+    - Older campaigns are prioritized (sorted by `startedAt`).
+
+    If one large campaign uses up capacity on a line, other campaigns using the same line may see their messages remain `queued` until the next day.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Webhooks
+
+<AccordionGroup>
+  <Accordion title="What webhooks should I implement first?" icon="bell">
+    At minimum:
+
+    - **Message webhooks** (`/api-reference/message-webhooks`):
+      - `message.delivered`
+      - `message.fallback`
+    - Optionally, generic `/webhook` events from `/api-reference/endpoint/webhook` for:
+      - `lead.created`, `lead.updated`, `availability.checked`, etc.
+
+    Implementing these gives you:
+
+    - Accurate message and campaign stats in your own systems.
+    - A foundation for CRM sync and analytics.
+  </Accordion>
+
+  <Accordion title="How should I secure message webhooks from workers?" icon="shield-halved">
+    Use a shared **service token**:
+
+    - Configure a `SERVICE_TOKEN` env variable in your app and workers.
+    - Require `Authorization: Bearer <SERVICE_TOKEN>` or `X-Service-Token: <SERVICE_TOKEN>` on `/api/webhooks/v1-message`.
+    - Reject any requests where the token does not match.
+  </Accordion>
+
+  <Accordion title="Do I need to support retries or idempotency?" icon="rotate">
+    Yes.
+
+    - Webhooks are retried when your endpoint:
+      - Times out.
+      - Returns non-2xx responses.
+    - You should:
+      - Implement idempotency by `(messageId, event)` combination.
+      - Make database updates idempotent (e.g. upserts or `updateOne` with `$set`).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## API & Integration Questions
+
+<AccordionGroup>
+  <Accordion title="Which token should I use for the API: Clerk token or Tuco API key?" icon="key">
+    - For **first-party** use (your own backend talking to the Tuco app), Clerk or Tuco auth tokens may be used per the `/api-reference/introduction`.
+    - For **integrations** (e.g. HubSpot backend, third-party services), use a dedicated **Tuco API key**:
+      - Easier to rotate.
+      - Clean workspace scoping.
+      - Safer to store in environment variables.
+  </Accordion>
+
+  <Accordion title="How do I handle 402 READ_ONLY errors?" icon="triangle-exclamation">
+    `402 READ_ONLY` means the workspace is temporarily in **read-only mode**, often due to billing.
+
+    - Do not keep retrying writes; they will continue to fail.
+    - Surface a clear message in your UI:
+      - “Tuco workspace is in read-only mode, please update billing in Tuco.”
+    - Reads may still work; only writes are blocked.
+  </Accordion>
+
+  <Accordion title="Can I use Tuco from my front-end directly?" icon="code">
+    Direct front-end use is **not recommended**:
+
+    - You would have to expose API keys or secure tokens in client code (unsafe).
+    - It is harder to centralize error handling, rate limiting, and idempotency.
+
+    Recommended pattern:
+
+    - Your front-end calls **your backend**.
+    - Your backend calls Tuco APIs with secure credentials.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## HubSpot Integration
+
+<AccordionGroup>
+  <Accordion title="How does the HubSpot integration talk to Tuco?" icon="hubspot">
+    The HubSpot backend (`plugins/hubspot-backend`) uses:
+
+    - HubSpot OAuth to get CRM permissions.
+    - A workspace-specific **Tuco API key** to:
+      - List lines (`/api/lines/by-user`).
+      - Send messages (`/api/messages`).
+      - Record activity back in HubSpot via timeline events.
+  </Accordion>
+
+  <Accordion title="What if a HubSpot workflow action fails to send?" icon="circle-exclamation">
+    Likely causes:
+
+    - Missing/invalid Tuco API key.
+    - No active lines in the Tuco workspace.
+    - HubSpot contact missing phone/email.
+
+    Check:
+
+    - Backend logs for `actions.routes.ts` and `tuco.service.ts`.
+    - That you have at least one active line in Tuco.
+    - That contact data in HubSpot maps correctly to Tuco fields.
+  </Accordion>
+</AccordionGroup>
+

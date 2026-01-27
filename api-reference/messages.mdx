@@ -1,0 +1,151 @@
+---
+title: "Messages API"
+description: "How Tuco AI treats messages sent through the API"
+icon: "paper-plane"
+---
+
+## What the Messages API Does
+
+The Messages API lets your systems send messages through the same Tuco engine used by the product UI.
+
+When a request is accepted:
+
+- A message record is created in Tuco.
+- The message appears in the Tuco UI with a clear status.
+- The message can be included in reporting, exports, and audits.
+
+You stay in control of which recipients and which lines are used; the system automatically handles delivery behavior behind the scenes.
+
+Messages can be triggered for individual contacts or as part of the workflows you build around campaigns and automations.
+
+---
+
+## Message Lifecycle You Can See
+
+From your perspective, each message moves through a small set of visible states, such as:
+
+- Waiting to be sent.
+- Successfully sent or delivered.
+- Not sent, with a clear reason.
+
+You can rely on these states being reflected both in the API responses and in the Tuco dashboard, so your teams share the same view of what has happened.
+
+You can also use these visible states in your own systems to decide when to move a contact forward in a journey or when to try a different channel.
+
+---
+
+## Sending from Your Own Systems
+
+When you send through the API, you decide:
+
+- Which workspace owns the message.
+- Which line it should appear to come from.
+- Which recipient should receive it.
+
+Once Tuco confirms that a message request has been accepted, data is preserved safely and remains available for your own analytics and exports. No further action is required from you to keep that history intact.
+
+Tuco can use the contact information stored on a lead (including multiple emails and phone numbers where present) to determine how to address a given message. Depending on how your campaigns and payloads are configured, you can choose to focus on a primary contact method or to involve additional addresses where appropriate.
+
+---
+
+## Personalization with Lead Fields
+
+Messages sent through the API can use simple placeholders such as first name and other basic lead fields for personalization.
+
+From your point of view:
+
+- You decide which fields to keep up to date on each lead.
+- Tuco applies those fields when rendering messages at send time.
+
+This keeps your content feeling personal while still being driven entirely by the lead data you already manage.
+
+---
+
+## Notifications & Webhooks
+
+If you choose to connect webhooks for message events, your systems can receive simple notifications when key changes occur, such as deliveries or replies.
+
+Webhook details and advanced configurations are described in `/api-reference/message-webhooks`. These options are designed so that you can mirror what you already see in Tuco without needing to understand internal delivery logic.
+
+In particular, failure and fallback‑style events make it easy for you to trigger your own follow‑up flows, such as sending an SMS or WhatsApp message when a contact cannot be reached on the channel you originally chose.
+
+---
+
+## Send iMessage to a Contact
+
+### Endpoint
+
+- **Method**: `POST`
+- **Path**: `/api/messages`
+- **Auth**: Tuco API key (server-side) or Clerk token
+
+### Required Fields
+
+- **`message`** (`string`) – body of the message.
+- **`messageType`** (`"imessage" | "sms" | "email"`) – use `"imessage"` for iMessage.
+- **`fromLineId`** (`string`) – ID of the line sending the message (from `/api/lines/by-user`).
+- One of:
+  - **`leadId`** (`string`) – send to an existing lead, using their stored contact details, **or**
+  - **`recipientPhone`** (`string`) and/or **`recipientEmail`** (`string`) – send directly to a raw contact.
+
+### Optional Fields
+
+- **`recipientName`** (`string`) – display name for the recipient (otherwise derived from the lead when possible).
+- **`scheduledDate`** (`string, ISO 8601`) – schedule for a future UTC time.
+- **`batchId`** (`string`) – arbitrary identifier to group related messages.
+- **Time window settings** (optional, align with campaigns):
+  - `timezone` (IANA string, e.g. `"America/New_York"`)
+  - `sendWindowStart` (`"HH:mm"`)
+  - `sendWindowEnd` (`"HH:mm"`)
+  - `allowedDaysOfWeek` (`number[] | string[]`)
+
+### Example: Send iMessage to an Existing Lead
+
+```bash
+POST /api/messages
+Authorization: Bearer tuco_xxx
+Content-Type: application/json
+
+{
+  "message": "Hey {{firstName}}, quick question about next week…",
+  "messageType": "imessage",
+  "fromLineId": "667f1f77bcf86cd799439011",
+  "leadId": "667f1f77bcf86cd799439012"
+}
+```
+
+### Example: Send iMessage to a Raw Contact
+
+```bash
+POST /api/messages
+Authorization: Bearer tuco_xxx
+Content-Type: application/json
+
+{
+  "message": "Hey John, this is a quick test from Tuco.",
+  "messageType": "imessage",
+  "fromLineId": "667f1f77bcf86cd799439011",
+  "recipientPhone": "+12025551234",
+  "recipientName": "John Doe"
+}
+```
+
+### Success Response (201 Created)
+
+```json
+{
+  "success": true,
+  "message": {
+    "_id": "690d1c95984d3cdcac76e9ff",
+    "message": "Hey John, this is a quick test from Tuco.",
+    "messageType": "imessage",
+    "status": "queued",
+    "fromLineId": "667f1f77bcf86cd799439011",
+    "leadId": "667f1f77bcf86cd799439012",
+    "createdAt": "2025-10-14T10:30:00Z"
+  }
+}
+```
+
+On errors you will receive a clear HTTP status and JSON body (for example `400` for validation issues, `401` for auth problems, or `402 READ_ONLY` when the workspace is temporarily read‑only).
+

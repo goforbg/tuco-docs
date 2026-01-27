@@ -1,0 +1,57 @@
+---
+title: "How Tuco Sends Messages"
+description: "What you can expect from Tuco’s sending engine without looking under the hood"
+icon: "gears"
+---
+
+## From Setup to Sending
+
+Once you have configured lines, leads, and campaigns in Tuco, the sending engine quietly turns that configuration into real outreach.
+
+From your perspective:
+
+- Messages you schedule appear in Tuco with clear statuses.
+- Changes you make to campaigns and lines are respected going forward.
+- Activity is reflected in analytics, exports, and webhooks in a consistent way.
+
+The system automatically handles timing, ordering, and delivery details so you can focus on who you contact and what you say.
+
+---
+
+## Predictable Message Behavior
+
+Tuco is designed so that message behavior feels predictable:
+
+- Messages that are accepted for sending will either complete with a visible final state or remain clearly marked as not sent.
+- Pausing or stopping a campaign stops new sends from starting, while already‑sent messages remain in history.
+- Resuming activity continues from the current state, without silently replaying past sends.
+
+No hidden resends or silent drops are introduced by the sending engine; what you see in Tuco is what happened.
+
+---
+
+## Fair Use of Your Lines
+
+Tuco treats your lines as shared capacity that should be used fairly and safely.
+
+In practice, this means:
+
+- Individual lines are not pushed beyond the usage levels Tuco considers safe for that identity.
+- Activity is spread in a way that avoids obvious spikes that could harm deliverability or trust.
+
+If a line cannot be used safely, Tuco makes that visible in the product instead of quietly over‑using it.
+
+---
+
+## Working Alongside Integrations
+
+Messages sent from integrations (such as CRMs or custom backends) go through the same sending engine as messages you configure directly in Tuco.
+
+As a result:
+
+- Your team sees one unified history of outreach, regardless of where it started.
+- Limits and protections apply consistently across all sources.
+- Webhooks and analytics reflect the full picture, not just what originated in the UI.
+
+No extra configuration is needed to “turn on” this consistency; it is handled automatically by the system as soon as you connect an integration.
+

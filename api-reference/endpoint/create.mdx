@@ -1,397 +1,65 @@
 ---
-title: "Create Lead"
+title: "Create / Upload Lead Endpoint"
 api: "POST /api/leads"
-description: "Add new leads to your workspace"
----
-
-## Overview
-
-Create one or more leads in your Tuco AI workspace. Leads can be added to existing lists or new lists will be created automatically.
-
+description: "Create a single lead or upload multiple leads into a Tuco workspace"
 ---
 
 ## Endpoint
 
-```
-POST /api/leads
-```
+- **Method**: `POST`  
+- **Path**: `/api/leads`
 
----
-
-## Authentication
-
-<ParamField header="Authorization" type="string" required>
-  Bearer token for authentication
-  
-  Example: `Bearer clerk_token_xxxxx`
-</ParamField>
-
-<ParamField header="Content-Type" type="string" required>
-  Must be `application/json`
-</ParamField>
+This endpoint is used both for creating a single lead and for bulk uploads (multiple leads in one request), just like the CSV import in the Tuco app.
 
 ---
 
 ## Request Body
 
-<ParamField body="leads" type="array" required>
-  Array of lead objects to create
-  
-  <Expandable title="Lead Object Properties">
-    <ParamField body="firstName" type="string" required>
-      Lead's first name
-    </ParamField>
-    
-    <ParamField body="lastName" type="string" required>
-      Lead's last name
-    </ParamField>
-    
-    <ParamField body="email" type="string" required>
-      Primary email address (must be valid format)
-    </ParamField>
-    
-    <ParamField body="phone" type="string" required>
-      Primary phone number with country code (E.164 format)
-      
-      Example: `+12025551234`
-    </ParamField>
-    
-    <ParamField body="altPhone1" type="string">
-      Alternate phone number 1
-    </ParamField>
-    
-    <ParamField body="altPhone2" type="string">
-      Alternate phone number 2
-    </ParamField>
-    
-    <ParamField body="altPhone3" type="string">
-      Alternate phone number 3
-    </ParamField>
-    
-    <ParamField body="altEmail1" type="string">
-      Alternate email address 1
-    </ParamField>
-    
-    <ParamField body="altEmail2" type="string">
-      Alternate email address 2
-    </ParamField>
-    
-    <ParamField body="altEmail3" type="string">
-      Alternate email address 3
-    </ParamField>
-    
-    <ParamField body="companyName" type="string">
-      Company or organization name
-    </ParamField>
-    
-    <ParamField body="jobTitle" type="string">
-      Job title or position
-    </ParamField>
-    
-    <ParamField body="linkedinUrl" type="string">
-      LinkedIn profile URL
-    </ParamField>
-    
-    <ParamField body="notes" type="string">
-      Additional notes or context
-    </ParamField>
-    
-    <ParamField body="customFields" type="object">
-      Custom field key-value pairs
-      
-      Example: `{"industry": "Technology", "revenue": "1M-5M"}`
-    </ParamField>
-  </Expandable>
-</ParamField>
-
-<ParamField body="listId" type="string" required>
-  ID of the list to add leads to
-  
-  If list doesn't exist, it will be created
-</ParamField>
-
-<ParamField body="source" type="string">
-  Source of the leads (for tracking)
-  
-  Examples: `csv_import`, `api`, `hubspot_sync`, `manual`
-</ParamField>
-
----
-
-## Response
-
-<ResponseField name="success" type="boolean">
-  Indicates if the operation was successful
-</ResponseField>
-
-<ResponseField name="message" type="string">
-  Human-readable success message
-</ResponseField>
-
-<ResponseField name="savedCount" type="integer">
-  Number of leads successfully created
-</ResponseField>
-
-<ResponseField name="listId" type="string">
-  ID of the list leads were added to
-</ResponseField>
-
-<ResponseField name="leads" type="array">
-  Array of created lead objects
-  
-  <Expandable title="Lead Object">
-    <ResponseField name="_id" type="string">
-      Unique lead identifier
-    </ResponseField>
-    
-    <ResponseField name="firstName" type="string">
-      Lead's first name
-    </ResponseField>
-    
-    <ResponseField name="lastName" type="string">
-      Lead's last name
-    </ResponseField>
-    
-    <ResponseField name="email" type="string">
-      Primary email address
-    </ResponseField>
-    
-    <ResponseField name="phone" type="string">
-      Primary phone number
-    </ResponseField>
-    
-    <ResponseField name="availabilityStatus" type="string">
-      iMessage availability status
-      
-      Values: `available`, `unavailable`, `checking`, `error`, `no_active_line`
-    </ResponseField>
-    
-    <ResponseField name="createdAt" type="datetime">
-      Timestamp when lead was created
-    </ResponseField>
-    
-    <ResponseField name="updatedAt" type="datetime">
-      Timestamp when lead was last updated
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
----
-
-## Examples
-
-<RequestExample>
-
-```bash cURL
-curl -X POST https://api.tuco.ai/v1/api/leads \
-  -H "Authorization: Bearer clerk_token_xxxxx" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "leads": [
-      {
-        "firstName": "John",
-        "lastName": "Doe",
-        "email": "john@example.com",
-        "phone": "+12025551234",
-        "companyName": "Acme Corp",
-        "jobTitle": "CEO",
-        "customFields": {
-          "industry": "Technology",
-          "revenue": "1M-5M"
-        }
-      }
-    ],
-    "listId": "507f1f77bcf86cd799439011",
-    "source": "api"
-  }'
-```
-
-```javascript Node.js
-const axios = require('axios');
-
-const createLead = async () => {
-  try {
-    const response = await axios.post('https://api.tuco.ai/v1/api/leads', {
-      leads: [{
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        phone: '+12025551234',
-        companyName: 'Acme Corp',
-        jobTitle: 'CEO',
-        customFields: {
-          industry: 'Technology',
-          revenue: '1M-5M'
-        }
-      }],
-      listId: '507f1f77bcf86cd799439011',
-      source: 'api'
-    }, {
-      headers: {
-        'Authorization': 'Bearer clerk_token_xxxxx',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    console.log('Lead created:', response.data);
-  } catch (error) {
-    console.error('Error:', error.response.data);
-  }
-};
-
-createLead();
-```
-
-```python Python
-import requests
-import json
-
-url = 'https://api.tuco.ai/v1/api/leads'
-headers = {
-    'Authorization': 'Bearer clerk_token_xxxxx',
-    'Content-Type': 'application/json'
-}
-
-payload = {
-    'leads': [{
-        'firstName': 'John',
-        'lastName': 'Doe',
-        'email': 'john@example.com',
-        'phone': '+12025551234',
-        'companyName': 'Acme Corp',
-        'jobTitle': 'CEO',
-        'customFields': {
-            'industry': 'Technology',
-            'revenue': '1M-5M'
-        }
-    }],
-    'listId': '507f1f77bcf86cd799439011',
-    'source': 'api'
-}
-
-response = requests.post(url, headers=headers, data=json.dumps(payload))
-
-if response.status_code == 200:
-    print('Lead created:', response.json())
-else:
-    print('Error:', response.json())
-```
-
-</RequestExample>
-
-<ResponseExample>
-
-```json Success Response
+```json
 {
-  "success": true,
-  "message": "Leads saved successfully",
-  "savedCount": 1,
-  "listId": "507f1f77bcf86cd799439011",
   "leads": [
     {
-      "_id": "507f1f77bcf86cd799439012",
       "firstName": "John",
       "lastName": "Doe",
       "email": "john@example.com",
       "phone": "+12025551234",
       "companyName": "Acme Corp",
       "jobTitle": "CEO",
+      "notes": "Warm intro from Sarah",
       "customFields": {
         "industry": "Technology",
-        "revenue": "1M-5M"
-      },
-      "availabilityStatus": "checking",
-      "createdAt": "2025-10-14T10:30:00Z",
-      "updatedAt": "2025-10-14T10:30:00Z"
+        "segment": "Mid-market"
+      }
     }
-  ]
+  ],
+  "listId": "507f1f77bcf86cd799439011",
+  "source": "api",
+  "defaultCountryCode": "+1"
 }
 ```
 
-```json Error Response - Missing Fields
+- `leads` – one or more contacts; a single contact is just a one‑element array.  
+- `listId` – Tuco list that should own these leads.  
+- `source` – optional origin label (for example, `"api"` or `"hubspot"`).  
+- `defaultCountryCode` – used to normalize phone numbers when no country code is present.
+
+---
+
+## Response
+
+```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Missing required fields: email, phone"
-  }
+  "message": "Leads saved successfully",
+  "savedCount": 1,
+  "duplicateCount": 0,
+  "totalProcessed": 1,
+  "listId": "507f1f77bcf86cd799439011"
 }
 ```
 
-```json Error Response - Invalid Format
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_FORMAT",
-    "message": "Invalid phone number format. Must be E.164 format (e.g., +12025551234)"
-  }
-}
-```
+- `savedCount` – number of new leads actually inserted.  
+- `duplicateCount` – leads skipped as duplicates within the same list (email/phone‑based).  
+- `totalProcessed` – total rows you attempted to upload.
 
-</ResponseExample>
+If validation fails you will receive a `400` with a readable error; if the workspace is temporarily read‑only you will receive a `402 READ_ONLY` error (see `/api-reference/errors`).
 
----
-
-## Error Codes
-
-| Code | Status | Description | Solution |
-|------|--------|-------------|----------|
-| `400` | Bad Request | Missing required fields | Check that all required fields are provided |
-| `400` | Bad Request | Invalid data format | Verify phone/email format is correct |
-| `401` | Unauthorized | Invalid auth token | Check your Authorization header |
-| `404` | Not Found | List not found | Verify the listId exists or will be created |
-| `429` | Too Many Requests | Rate limit exceeded | Implement exponential backoff |
-| `500` | Internal Server Error | Server error | Contact support if persists |
-
----
-
-## Validation Rules
-
-### Phone Numbers
-
-<Info>
-Phone numbers must be in E.164 format: `+[country code][number]`
-
-**Examples:**
-- US: `+12025551234`
-- UK: `+447911123456`
-- Australia: `+61412345678`
-</Info>
-
-**Auto-formatting:**
-- 10 digits → `+1XXXXXXXXXX` (assumes US)
-- 11 digits starting with 1 → `+1XXXXXXXXXX`
-
-### Email Addresses
-
-- Must contain `@` and `.`
-- Automatically converted to lowercase
-- Whitespace is trimmed
-
-### Duplicate Detection
-
-<Warning>
-Duplicates are detected by email address. If a lead with the same email already exists in your workspace, the request will fail with a duplicate error.
-</Warning>
-
----
-
-## Best Practices
-
-<AccordionGroup>
-  <Accordion title="Batch Creation" icon="layer-group">
-    Create multiple leads in a single request (up to 1,000) to reduce API calls and improve performance.
-  </Accordion>
-  
-  <Accordion title="Error Handling" icon="triangle-exclamation">
-    Always implement proper error handling and check the response status before proceeding.
-  </Accordion>
-  
-  <Accordion title="Data Validation" icon="check-circle">
-    Validate phone and email formats client-side before sending to the API to reduce errors.
-  </Accordion>
-  
-  <Accordion title="Custom Fields" icon="tags">
-    Use custom fields to store additional metadata specific to your business needs.
-  </Accordion>
-</AccordionGroup>

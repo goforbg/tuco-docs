@@ -1,0 +1,114 @@
+---
+title: "Integrations FAQ"
+description: "FAQ for connecting Tuco AI to CRMs, backends, and other systems using only public APIs"
+icon: "puzzle-piece"
+---
+
+## General Integration Patterns
+
+<AccordionGroup>
+  <Accordion title="What is the recommended way to integrate my backend with Tuco?" icon="server">
+    Recommended pattern:
+
+    - **Your front-end**:
+      - Talks only to your own backend.
+      - Never holds Tuco API keys.
+    - **Your backend**:
+      - Stores a **workspace-scoped Tuco API key** securely.
+      - Calls Tuco’s public APIs for:
+        - Lead creation/import.
+        - Message sending.
+        - Line listing.
+      - Exposes its own internal APIs to your applications.
+    - **Webhooks**:
+      - You configure Tuco to send message and other webhooks to your backend.
+      - Your backend processes them and updates your internal systems (CRMs, data warehouse, etc.).
+  </Accordion>
+
+  <Accordion title="Can I integrate Tuco directly into my CRM?" icon="address-card">
+    Yes, and the HubSpot integration is a good reference architecture:
+
+    - A **CRM-side app**:
+      - Provides UI inside the CRM (cards, workflow actions, settings).
+    - A **backend connector**:
+      - Knows how to talk to the CRM API.
+      - Uses a Tuco API key to talk to Tuco.
+
+    You can adopt this pattern for other CRMs (Salesforce, Pipedrive, etc.), always:
+
+    - Using Tuco’s documented APIs.
+    - Never calling internal worker endpoints or databases directly.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Webhooks & Events
+
+<AccordionGroup>
+  <Accordion title="Which webhooks are essential for a robust integration?" icon="webhook">
+    At a minimum:
+
+    - **Message webhooks**:
+      - Delivery and fallback events, as documented in `/api-reference/message-webhooks`.
+    - **Generic event webhooks** (where configured):
+      - `lead.created`, `lead.updated`, `availability.checked`, etc.
+
+    Using these, your integration can:
+
+    - Keep message statuses in sync.
+    - Update contact availability.
+    - Trigger follow-up actions in your own systems.
+  </Accordion>
+
+  <Accordion title="How do I ensure webhooks don't overload my system?" icon="gauge-high">
+    Strategies:
+
+    - Implement a light **ingress layer**:
+      - Validates and authenticates requests.
+      - Quickly enqueues them to your own internal queue.
+      - Responds to Tuco within a short timeout.
+    - Process webhook payloads asynchronously:
+      - Database writes and downstream calls happen in background workers.
+    - Use backpressure and rate limiting internally:
+      - Ensure a spike in events from Tuco does not overwhelm downstream dependencies.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## HubSpot-Specific Questions
+
+<AccordionGroup>
+  <Accordion title="How is the HubSpot app linked to my Tuco workspace?" icon="link">
+    The HubSpot backend:
+
+    - Uses HubSpot OAuth to identify the HubSpot account.
+    - Asks the user to either:
+      - Authenticate with Tuco, or
+      - Provide a Tuco API key.
+    - Stores the mapping:
+      - HubSpot portal ↔ Tuco workspace ↔ Tuco API key.
+
+    After this:
+
+    - Workflow actions and cards know which Tuco workspace to talk to.
+    - All calls from the backend to Tuco use the stored API key.
+  </Accordion>
+
+  <Accordion title="What data flows from Tuco back into HubSpot?" icon="right-left">
+    Typical flows include:
+
+    - **Timeline events**:
+      - Outbound Tuco messages (content, channel, status).
+      - Replies from recipients as inbound events.
+    - **Status updates**:
+      - Flags or properties that indicate last contacted/last replied dates.
+
+    All of this happens through:
+
+    - Tuco → HubSpot backend via public webhooks and APIs.
+    - Backend → HubSpot via officially supported HubSpot APIs.
+  </Accordion>
+</AccordionGroup>
+

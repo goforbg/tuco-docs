@@ -1,0 +1,274 @@
+---
+title: "Leads API"
+description: "How Tuco AI treats leads created, updated, and viewed through the API"
+icon: "users"
+---
+
+## What the Leads API Does
+
+Leads created or updated through the API behave the same way as leads created in the Tuco dashboard.
+
+You can rely on the API to:
+
+- Add new people or accounts into Tuco, one at a time or in bulk.
+- Keep their core contact details aligned with your own systems.
+- Attach leads to the same lists and segments you see in the product.
+
+Whenever a request is accepted, the new or updated lead appears in the UI and can be used in campaigns and reporting with no extra setup.
+
+---
+
+## Typical Operations
+
+The Leads API is designed around a few predictable actions:
+
+- **Create or import leads** from your CRM or internal tools, either as single contacts or in large batches.
+- **Retrieve leads** so your systems can stay in sync.
+- **Update or remove leads** when details change or need to be cleared.
+- **Check messaging availability** for contact information where supported.
+
+The system automatically handles storing lead information in a way that remains stable over time, so your external IDs and Tuco IDs can be linked safely.
+
+---
+
+## Multiple Emails and Phone Numbers
+
+Tuco can store several emails and phone numbers for a single lead.
+
+From your perspective:
+
+- You can pass through the contact methods you already have for each person.
+- Tuco can use these to understand where messaging is possible.
+- Campaigns and API sends can be configured to focus on a primary contact method or take additional addresses into account.
+
+Data is preserved safely, so you can evolve how you use these fields over time without losing the original contact information.
+
+---
+
+## iMessage & Channel Availability
+
+Where enabled, Tuco can assess whether a lead is reachable over iMessage based on the contact details you provide.
+
+This gives you:
+
+- A clear signal about whether iMessage is available for a given lead.
+- The option to check availability for a single contact or for many at once.
+- The ability to use that signal in your own workflows, such as deciding whether to use iMessage, SMS, email, or another channel.
+
+The system automatically handles any internal checks; you only see the outcome and can design your flows accordingly.
+
+---
+
+## Leads in Campaigns & Workflows
+
+Adding a lead to a campaign via the API feels the same as adding them in the Tuco UI.
+
+Once a lead is associated with a campaign:
+
+- They enter the sequence you have defined for that campaign.
+- Messages sent as part of that journey appear in their history and in campaign reports.
+- Any personalization based on their stored fields is applied when messages go out.
+
+This makes it easy to build workflows where your own systems decide **when** someone should start a campaign, while Tuco decides **how** that journey plays out.
+
+---
+
+## Personalization Inputs
+
+Tuco supports message templates that reference simple fields such as first name and other basic properties stored on the lead.
+
+From your point of view:
+
+- As long as the relevant fields are present on the lead, messages can use them for personalization.
+- Updates you make to lead data before a message is sent are reflected when that message is rendered.
+
+You do not need to manage any additional templating engine; the system automatically applies the latest lead data when sending.
+
+---
+
+## Data You Can Expect
+
+Lead‑related responses share a consistent shape.
+
+You can expect to see:
+
+- A unique identifier you can store in your own systems.
+- Core profile fields such as names and primary contact details.
+- Simple status indicators that match what you see in the Tuco UI.
+
+If a request is declined, Tuco clearly reports that no new lead was created or changed.
+
+---
+
+## When Something Goes Wrong
+
+If a Leads API call cannot be completed, you see a clear error message and status code.
+
+Your workspace data is not partially changed, and you remain in control of whether to correct the input, adjust your own logic, or contact support.
+
+For more about error meanings, see `/api-reference/errors`.
+
+---
+
+## Upload One or Many Contacts
+
+Both single and bulk uploads use the same endpoint.
+
+### Endpoint
+
+- **Method**: `POST`
+- **Path**: `/api/leads`
+- **Auth**: Clerk (dashboard flows). For backend integrations, call this from a trusted server acting on behalf of a workspace.
+
+### Request Body
+
+```json
+{
+  "leads": [
+    {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+12025551234",
+      "companyName": "Acme Corp",
+      "jobTitle": "CEO",
+      "notes": "Warm intro from Sarah",
+      "customFields": {
+        "industry": "Technology",
+        "segment": "Mid-market"
+      }
+    }
+  ],
+  "listId": "507f1f77bcf86cd799439011",
+  "source": "api",
+  "defaultCountryCode": "+1"
+}
+```
+
+- `leads` – one or more contacts; a single contact is just a one‑element array.
+- `listId` – Tuco list that should own these leads.
+- `source` – optional label for where the leads came from.
+- `defaultCountryCode` – used to normalize phone numbers when no country code is present.
+
+### Response
+
+```json
+{
+  "message": "Leads saved successfully",
+  "savedCount": 1,
+  "duplicateCount": 0,
+  "totalProcessed": 1,
+  "listId": "507f1f77bcf86cd799439011"
+}
+```
+
+Duplicates within the same list (based on email/phone) are skipped and reported via `duplicateCount`; they do not cause the call to fail.
+
+---
+
+## Check iMessage Availability for a Lead or Address
+
+Tuco exposes a dedicated API for checking iMessage reachability using the availability engine.
+
+### Check a Specific Lead
+
+- **Method**: `GET`
+- **Path**: `/api/leads/check-availability?id={leadId}`
+- **Auth**: Tuco API key or Clerk (via `authenticateRequest`)
+
+```bash
+GET /api/leads/check-availability?id=667f1f77bcf86cd799439012
+Authorization: Bearer tuco_xxx
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "leadId": "667f1f77bcf86cd799439012",
+  "available": true,
+  "status": "available"
+}
+```
+
+`status` will be one of `available`, `unavailable`, or `error` and is also written back to the lead record.
+
+### Check a Raw Phone or Email Address
+
+- **Method**: `POST`
+- **Path**: `/api/leads/check-availability`
+- **Auth**: Tuco API key or Clerk (via `authenticateRequest`)
+
+```bash
+POST /api/leads/check-availability
+Authorization: Bearer tuco_xxx
+Content-Type: application/json
+
+{
+  "address": "+12025551234"
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "available": true,
+  "address": "+12025551234"
+}
+```
+
+For batch lead availability (many leads at once), the same endpoint accepts `leadIds` or `listId` and may offload work to background processing; see `/features/check-availability` for behavioral details.
+
+---
+
+## Add a Contact to an iMessage Campaign
+
+Use the campaigns API to add an existing lead—or create a new one—and start that lead through a campaign sequence.
+
+### Endpoint
+
+- **Method**: `POST`
+- **Path**: `/api/campaigns/{campaignId}/leads`
+- **Auth**: Tuco API key or Clerk (via `authenticateRequest`)
+
+### Request Body (Existing Lead)
+
+```json
+{
+  "leadId": "667f1f77bcf86cd799439012"
+}
+```
+
+### Request Body (Create & Add Lead)
+
+```json
+{
+  "lead": {
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+12025550000"
+  }
+}
+```
+
+In both cases, the lead is associated with the campaign’s underlying list and scheduled messages are created for them based on the campaign’s steps and settings.
+
+### Response
+
+```json
+{
+  "success": true,
+  "leadId": "667f1f77bcf86cd799439012",
+  "campaignId": "6680e6d0bcf86cd799439099",
+  "messageCount": 3,
+  "message": "Lead added to campaign and sequence started"
+}
+```
+
+From your perspective this is the API to **add a contact to an iMessage campaign**; Tuco handles when each step actually sends based on limits and time windows.
+
+

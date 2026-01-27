@@ -1,0 +1,195 @@
+---
+title: "Campaigns"
+description: "Design multi-step outreach that respects limits, timing, and customer experience"
+icon: "bullhorn"
+---
+
+## What Campaigns Let You Do
+
+Campaigns in Tuco let you turn a list of leads into a **structured, multi-step outreach journey**:
+
+- **Scale**: Reach hundreds or thousands of people with a single configuration.
+- **Control**: Decide who gets contacted, when, and on which lines.
+- **Safety**: Stay within sensible sending limits and time windows so outreach feels human, not spammy.
+- **Feedback**: See clear status and performance signals you can plug into your own systems.
+
+You define the strategy; Tuco handles the day‑to‑day execution.
+
+---
+
+## Core Concepts
+
+- **Audience**: The leads you want to contact (typically from a list or segment).
+- **Steps**: The messages and delays that make up your sequence.
+- **Lines**: The sending identities (numbers/emails) you’re comfortable using.
+- **Schedule & Limits**: Guardrails on when and how quickly messages go out.
+
+From your point of view, a campaign is a template that answers four questions:
+
+1. **Who** should receive this?
+2. **What** should they receive at each step?
+3. **When** is it okay to send each step?
+4. **How** should we behave when leads reply or can’t be reached?
+
+---
+
+## Designing a Campaign
+
+When you create a campaign in the Tuco app, you typically:
+
+1. **Choose an audience**
+   - Pick an existing list or segment of leads.
+   - Optionally filter further (e.g. by region, product, or last activity).
+
+2. **Attach lines**
+   - Select which approved sending identities (lines) are eligible.
+   - Tuco spreads activity across these lines within your configured limits.
+
+3. **Define steps**
+   - Draft the message for each step.
+   - Choose how long to wait after the previous step (seconds, minutes, hours, days).
+   - Decide whether a step should only apply to non‑responders.
+
+4. **Set timing rules**
+   - Allowed hours of day.
+   - Allowed days of week.
+   - Any spacing you want between contacts on the same line.
+
+Once this is saved and launched, Tuco takes responsibility for when individual messages are actually sent, within those rules.
+
+---
+
+## How Campaign Statuses Help You Operate
+
+Tuco exposes a small, stable set of message statuses so you can understand campaign health at a glance and build your own logic around it:
+
+- **Queued**
+  - The message is planned, but Tuco is waiting for:
+    - An allowed time window.
+    - An allowed day of week.
+    - Available capacity on the selected line.
+  - Use this to understand “what is going to happen soon but hasn’t started yet”.
+
+- **Pending / Sending**
+  - The message is in the process of going out.
+  - Use this to distinguish “actively being delivered” from “just planned”.
+
+- **Sent / Delivered**
+  - The message has been successfully handed off to, or confirmed by, the downstream channel (where supported).
+  - Use these states to:
+    - Trigger follow‑up tasks in your systems.
+    - Move a lead forward in your own journeys.
+
+- **Failed**
+  - Tuco could not send the message (for example: permanently invalid address or a channel‑level error).
+  - Failed messages are not retried silently.
+  - Use this to:
+    - Clean data.
+    - Alert operators.
+    - Decide whether another channel is appropriate.
+
+- **Fallback**
+  - The primary channel you chose is not available for this lead.
+  - Tuco records this outcome and expects your configuration or integration to decide what to do next (e.g. SMS or email).
+  - See `/features/failures-and-fallbacks` for how to interpret this in your own workflows.
+
+At the campaign level, you see aggregates of these statuses so you can quickly answer:
+
+- How many people have been contacted?
+- How many are still queued?
+- How many hit failures or fallbacks?
+
+---
+
+## Limits, Timing & Customer Experience
+
+Campaigns are built to help you grow **without** burning your lines or audience:
+
+- **Per‑line daily limits**
+  - Protect each sending identity with per‑day caps on:
+    - New conversations.
+    - Total messages.
+  - When caps are reached, additional messages stay **Queued** instead of being forced through.
+
+- **Time windows and days**
+  - Ensure messages only go out:
+    - During business hours you choose.
+    - On days of the week you approve (e.g. weekdays only).
+  - Outside those windows, messages simply wait without being lost.
+
+- **Natural pacing**
+  - Tuco spaces out activity on a line to avoid obvious spikes.
+  - You don’t have to manage the low‑level scheduling yourself; you only configure your comfort level.
+
+From your side, you only ever see:
+
+- Which messages are queued vs sent vs failed vs fallback.
+- That messages respect the windows and limits you set, even during large sends.
+
+---
+
+## Multi-Step Journeys & Replies
+
+Campaigns support rich flows rather than one‑off blasts:
+
+- **Sequenced steps**
+  - Each step waits for the actual send time of the previous step before it becomes eligible.
+  - Long delays (e.g. “4 days later”) are treated the same as short ones (“20 minutes later”) from your perspective—Tuco simply holds the message until it is allowed.
+
+- **Behavior when leads reply**
+  - Replies can:
+    - Update campaign stats (reply counts and rates).
+    - Drive your own automations via reply webhooks (see `/features/replies` and `/api-reference/message-webhooks`).
+  - Many teams choose to:
+    - Stop or skip later steps for leads who replied.
+    - Create follow‑up tasks in their CRM when certain replies arrive.
+
+Tuco’s goal is to make these patterns easy to implement from your side using clear statuses and webhooks, without you needing to understand any internal routing or storage.
+
+---
+
+## When Lines or Channels Change
+
+Real‑world sending conditions are not static. Lines can become unavailable, and some channels may stop being appropriate for particular contacts.
+
+Tuco is designed so that, from your perspective:
+
+- **Conversation continuity is respected**
+  - Once a lead starts hearing from a given line in a campaign, follow‑ups prefer that same line so the thread feels coherent.
+
+- **You see what changed**
+  - If a line can no longer be used, future sends either:
+    - Stop and become **Failed**, or
+    - Are held until a safe option is available,
+    - Depending on your configuration and what’s safe for that conversation.
+
+- **Campaigns are recoverable**
+  - If no lines are usable, a campaign can be paused.
+  - Once you restore line health or add capacity, you can resume and let queued activity continue.
+
+You never have to manage internal reassignments or recovery steps—the only contract you rely on is what the UI, APIs, and webhooks report.
+
+---
+
+## Working with Other Tuco Features
+
+Campaigns plug into the rest of Tuco’s surface area:
+
+- **Availability checks**
+  - Use `/features/check-availability` to:
+    - Pre‑qualify leads for iMessage.
+    - Decide when to prefer SMS or email instead.
+  - Campaigns can respect those availability signals so you don’t waste steps on unreachable channels.
+
+- **Failures & fallbacks**
+  - `/features/failures-and-fallbacks` explains:
+    - How to interpret high failure or fallback counts.
+    - How to decide when to switch channels or clean data.
+
+- **Replies & inbox**
+  - `/features/replies` shows how replies are surfaced via:
+    - The Tuco UI.
+    - Webhooks you can consume in your CRM or backend.
+
+Together, these let you treat campaigns as a **predictable, observable engine** that you can safely build your own logic and reporting on top of, without ever needing access to how Tuco is implemented internally.
+

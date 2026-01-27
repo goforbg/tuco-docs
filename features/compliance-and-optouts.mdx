@@ -1,0 +1,212 @@
+---
+title: "Compliance, Consent & Opt-Outs"
+description: "Patterns for respectful, compliant messaging with Tuco AI across iMessage, SMS, and email"
+icon: "scale-balanced"
+---
+
+## Scope & Disclaimer
+
+This page provides **implementation patterns**, not legal advice.
+
+- You remain responsible for complying with:
+  - Local and international regulations (e.g. GDPR, CAN-SPAM, TCPA, ePrivacy, etc.).
+  - Your own policies and agreements.
+- Tuco AI provides primitives (leads, fields, messages, webhooks) that you can combine into compliant flows.
+
+Always consult your legal counsel for regulatory specifics.
+
+---
+
+## Consent & Audience Management
+
+### Storing Consent
+
+In your own systems and in Tuco leads:
+
+- Track consent-related attributes, such as:
+  - `hasConsentedToMessaging`
+  - `consentSource` (e.g. web form, signed contract)
+  - `consentTimestamp`
+
+You can:
+
+- Store these as:
+  - Custom fields on leads.
+  - Additional metadata in your own database.
+
+### Using Consent in Campaign Logic
+
+Before sending messages:
+
+- Filter audiences based on:
+  - Consent flags.
+  - Channels allowed (e.g. iMessage vs email vs SMS).
+  - Regions and applicable regulatory regimes.
+
+In your own backend:
+
+```pseudo
+eligibleLeads = leads.filter(
+  lead.hasConsentedToMessaging &&
+  lead.prefersImessageOrSms &&
+  !lead.isOptedOut
+)
+```
+
+Tuco then receives:
+
+- Only leads you have determined are compliant to contact.
+
+---
+
+## Opt-Out Handling Patterns
+
+### Storing Opt-Out Flags
+
+For each lead and channel:
+
+- Maintain flags like:
+  - `optedOutOfAll`
+  - `optedOutOfImessage`
+  - `optedOutOfSms`
+  - `optedOutOfEmail`
+
+These flags can live primarily in your own systems and be mirrored to Tuco via:
+
+- Lead updates.
+- Custom fields.
+
+### Detecting Opt-Outs from Replies
+
+When using replies to capture opt-outs:
+
+- Implement logic in your own systems to detect:
+  - Messages containing patterns like:
+    - “STOP”, “UNSUBSCRIBE”, “REMOVE ME” (case-insensitive, language-sensitive).
+  - Domain-specific phrases for your regions.
+
+Flow:
+
+1. Tuco ingests replies and surfaces them via:
+   - The app’s inbox / UI.
+   - Message or reply webhooks.
+2. Your webhook consumer:
+   - Classifies replies.
+   - Updates:
+     - `optedOutOfX` flags for the lead.
+3. Future campaign logic:
+   - Excludes leads with opt-out flags for the relevant channels.
+
+### Manual Opt-Outs
+
+Provide administrative tools (in your own product and/or in Tuco) to:
+
+- Manually set or clear opt-out flags.
+- View opt-out history per lead.
+
+---
+
+## Channel-Specific Considerations
+
+### iMessage / SMS
+
+Regulations often require:
+
+- Clear identification of the sender.
+- Clear instructions for opting out, especially for SMS.
+
+Patterns:
+
+- Include:
+  - Your brand name.
+  - Simple opt-out wording (e.g. “Reply STOP to unsubscribe” where appropriate).
+- Ensure replies that represent opt-outs:
+  - Are processed quickly.
+  - Immediately stop further outreach on that channel.
+
+### Email
+
+Common requirements (varies by jurisdiction):
+
+- Unsubscribe link or mechanism in every email.
+- Valid physical mailing address.
+- Accurate “From” fields and subject lines.
+
+Tuco can:
+
+- Deliver email content as you design it.
+- Track message states and replies.
+
+You are responsible for:
+
+- Including regulatory-required content in templates.
+- Maintaining suppression lists for opted-out addresses.
+
+---
+
+## Suppression & Exclusion Lists
+
+Even with consent and opt-outs tracked per lead, you may want:
+
+- **Global suppression lists**:
+  - Domains or addresses never to contact (e.g. internal test emails, role accounts).
+- **Campaign-level exclusions**:
+  - Don’t message leads included in another specific segment or campaign.
+
+Patterns:
+
+- Maintain suppression lists in your own system.
+- Filter before creating campaigns or sending messages via Tuco.
+
+---
+
+## Auditing & Record-Keeping
+
+For compliance and internal governance, maintain:
+
+- **Event history** per lead:
+  - When consent was granted and from where.
+  - When opt-outs were received and processed.
+  - Campaigns and messages sent.
+- **System logs**:
+  - Who in your organization modified consent or opt-out fields.
+  - Changes to template content and targeting rules.
+
+Tuco’s message and webhook data can help:
+
+- Provide evidence of what was sent and when.
+- Correlate with your own consent and opt-out records.
+
+---
+
+## Governance & Review Processes
+
+For enterprise deployments:
+
+- Establish review processes for:
+  - New templates (tone, content, compliance).
+  - New campaign segments and targeting logic.
+  - Changes to consent and opt-out handling logic.
+
+- Involve:
+  - Legal/compliance teams.
+  - Data protection officers (where required).
+
+---
+
+## Summary
+
+Tuco AI provides the infrastructure to:
+
+- Send messages via multiple channels.
+- Track deliveries and replies.
+- Integrate with your systems via APIs and webhooks.
+
+Compliance depends on how you:
+
+- Collect and store consent.
+- Implement opt-out and suppression logic.
+- Design and review your templates and campaigns.
+
+By combining Tuco’s primitives with the patterns on this page and professional legal advice, you can run large-scale, compliant outreach programs without exposing or depending on internal Tuco APIs.
+

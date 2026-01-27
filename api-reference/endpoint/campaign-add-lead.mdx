@@ -1,0 +1,76 @@
+---
+title: "Add Lead to Campaign Endpoint"
+api: "POST /api/campaigns/{id}/leads"
+description: "Add a lead to a specific campaign and start that lead through the sequence"
+icon: "bullhorn"
+---
+
+## Endpoint
+
+- **Method**: `POST`  
+- **Path**: `/api/campaigns/{id}/leads`
+
+`{id}` is the campaign ID in Tuco.
+
+---
+
+## Use Cases
+
+- Enroll an existing lead into an iMessage campaign from your backend or CRM.  
+- Create a new lead and add them to a running or scheduled campaign in a single call.
+
+---
+
+## Request Body (Existing Lead)
+
+```json
+{
+  "leadId": "667f1f77bcf86cd799439012"
+}
+```
+
+Tuco will:
+
+- Validate that the lead belongs to the same workspace.  
+- Attach the lead to the campaign’s list (if needed).  
+- Create the campaign messages for that lead based on the campaign’s steps and settings.
+
+---
+
+## Request Body (Create & Add Lead)
+
+```json
+{
+  "lead": {
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "email": "jane@example.com",
+    "phone": "+12025550000",
+    "companyName": "Acme Corp",
+    "jobTitle": "VP Sales"
+  }
+}
+```
+
+If you send `lead` instead of `leadId`, Tuco:
+
+- Creates the lead in the same workspace.  
+- Adds it to the campaign’s underlying list.  
+- Starts that lead through the campaign sequence.
+
+---
+
+## Response
+
+```json
+{
+  "success": true,
+  "leadId": "667f1f77bcf86cd799439012",
+  "campaignId": "6680e6d0bcf86cd799439099",
+  "messageCount": 3,
+  "message": "Lead added to campaign and sequence started"
+}
+```
+
+If the campaign or lead cannot be found you receive a `404`. If the payload is invalid (for example, missing both `leadId` and `lead`) you receive a `400` with a descriptive error. Authentication failures return `401`.
+

@@ -1,0 +1,53 @@
+---
+title: "Errors & Outcomes"
+description: "How Tuco AI surfaces API errors and what they mean for you"
+icon: "circle-exclamation"
+---
+
+## How Errors Are Shown
+
+When something goes wrong with an API request, Tuco AI:
+
+- Returns a clear HTTP status code.
+- Provides a short, readable message explaining what happened.
+
+Nothing changes silently. If a request is rejected, the underlying data in your workspace remains exactly as it was before the call.
+
+---
+
+## Common Status Codes
+
+You can expect these high‑level meanings:
+
+- **2xx** – The request was accepted and the change is reflected in your workspace.
+- **4xx** – The request was not accepted because of something about the call (such as missing data or access).
+- **5xx** – The request did not complete due to a temporary problem on the service side.
+
+Data is preserved safely, and you stay in control of when you retry or adjust any failed request.
+
+---
+
+## Typical API Errors
+
+Some outcomes you may see:
+
+- **Invalid request**: Required information is missing or formatted in a way Tuco cannot accept. The response tells you which part needs attention.
+- **Authentication or access issue**: The credentials used do not match an allowed workspace or do not have permission for the requested data.
+- **Not found**: The item you referenced (such as a lead or line) does not exist in the workspace that made the request.
+- **Usage or billing issue**: The workspace has reached a state where changes are temporarily blocked, and write operations are declined until resolved in the Tuco UI.
+
+In all of these cases, Tuco clearly signals that the requested change did not go through.
+
+---
+
+## Rate & Usage Limits
+
+Tuco AI applies safeguards so that the API remains stable for everyone.
+
+When you reach a documented limit:
+
+- You receive an explicit error explaining that a limit has been reached.
+- No unexpected partial changes are made to your data.
+
+The system automatically handles internal protections; no special configuration is required from you beyond observing the limits published in your plan and product updates.
+

@@ -1,0 +1,147 @@
+---
+title: "Security, Access & Billing FAQ"
+description: "Frequently asked questions about API keys, workspace access, read-only mode, and safe usage patterns"
+icon: "shield"
+---
+
+## API Keys & Access
+
+<AccordionGroup>
+  <Accordion title="How should I store and use Tuco API keys?" icon="key">
+    Best practices:
+
+    - Store API keys **only on your backend** (server-side).
+    - Use secure secret management (e.g. environment variables, secret managers).
+    - Never embed keys in:
+      - Front-end JavaScript.
+      - Mobile/desktop apps distributed to end-users.
+      - Public repositories or logs.
+
+    For each workspace or integration:
+
+    - Prefer a dedicated **workspace-scoped** API key instead of sharing one key across many systems.
+  </Accordion>
+
+  <Accordion title="Can I use the same key for multiple environments?" icon="arrows-rotate">
+    It is recommended to:
+
+    - Use separate API keys for:
+      - Development.
+      - Staging.
+      - Production.
+
+    This allows you to:
+
+    - Isolate data and actions per environment.
+    - Rotate keys independently as needed.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Authentication & Authorization Behavior
+
+<AccordionGroup>
+  <Accordion title="What does a 401 Unauthorized mean in Tuco?" icon="lock">
+    A `401 Unauthorized` typically means:
+
+    - The `Authorization` header is missing.
+    - The token or API key is not valid.
+    - The token is not accepted for the requested endpoint.
+
+    Check:
+
+    - Token format (e.g. `Authorization: Bearer <token>`).
+    - That the key corresponds to the intended workspace and environment.
+  </Accordion>
+
+  <Accordion title="What does a 403 Forbidden mean?" icon="user-lock">
+    A `403 Forbidden` indicates:
+
+    - You are authenticated, but not allowed to perform this action or access this resource.
+
+    Common cases:
+
+    - Attempting to access resources not belonging to the workspace associated with your token.
+    - Using a token with insufficient privileges (where granular roles are configured).
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Billing, Read-Only Mode & Quotas
+
+<AccordionGroup>
+  <Accordion title="What is READ_ONLY mode and how does it affect my integration?" icon="triangle-exclamation">
+    When a workspace enters **read-only** mode (e.g. due to billing issues), write operations may fail with:
+
+    ```json
+    {
+      "error": "READ_ONLY",
+      "code": "READ_ONLY",
+      "reason": "past_due"
+    }
+    ```
+
+    Effects:
+
+    - You may still be able to **read** data (e.g. leads, messages, lines).
+    - **Writes** such as creating new messages or leads will be blocked.
+
+    Integration guidance:
+
+    - Treat this as a **hard stop** for writes.
+    - Surface clear messaging in your own UI or logs:
+      - “Tuco workspace is in read-only mode; please resolve billing in Tuco.”
+    - Avoid infinite retries; they will continue to fail until resolved.
+  </Accordion>
+
+  <Accordion title="How do plan limits interact with daily message limits?" icon="gauge-high">
+    At a high level:
+
+    - **Plan limits**:
+      - Define global ceilings (e.g. total messages per day or month per workspace).
+    - **Per-line limits**:
+      - Define how many messages a specific line can send in a day.
+
+    Workers enforce per-line limits; the app enforces workspace-level plan constraints.  
+    Together, they ensure:
+
+    - No single line is overused.
+    - Entire workspaces stay within contracted limits.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Data Privacy & Isolation
+
+<AccordionGroup>
+  <Accordion title="How is my workspace data isolated from others?" icon="user-shield">
+    Workspaces provide logical isolation:
+
+    - Each workspace has its own:
+      - Leads.
+      - Campaigns.
+      - Messages.
+      - Lines and configuration.
+
+    Access decisions are always scoped by:
+
+    - The workspace associated with the authenticated user or API key.
+
+    Tuco does not allow cross-workspace reads or writes via public APIs.
+  </Accordion>
+
+  <Accordion title="Can Tuco staff see my messages and leads?" icon="eye-slash">
+    Operational behavior depends on contractual and legal requirements; in general:
+
+    - Access to data by Tuco personnel is restricted and audited.
+    - Where sensitive environments require it, additional controls can be applied via:
+      - Support agreements.
+      - Data processing addenda.
+
+    For compliance-specific guarantees (e.g. SOC 2, GDPR), refer to your contract and official legal/compliance documentation provided by Tuco outside of this developer guide.
+  </Accordion>
+</AccordionGroup>
+

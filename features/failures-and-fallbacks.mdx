@@ -1,0 +1,224 @@
+---
+title: "Failures, Fallbacks & Delivery Outcomes"
+description: "Understand what can happen to a message and how to react in your own systems"
+icon: "triangle-exclamation"
+---
+
+## Why Delivery Outcomes Matter
+
+When you send messages at scale, not every attempt will succeed:
+
+- Some addresses are invalid or no longer in use.
+- Some recipients don’t support iMessage.
+- Some channels are temporarily unavailable.
+
+Tuco is designed so that, from your point of view:
+
+- Every message ends up in a **clear, stable outcome state**.
+- You can safely build automations that respond to those states.
+- You do **not** need to understand the underlying retry or routing logic.
+
+This page focuses purely on the **outcomes you see** and how to use them.
+
+---
+
+## Message Statuses You Can Build On
+
+Across the app, APIs, and webhooks, you’ll see a small set of message statuses:
+
+- **queued**
+  - The message is planned, but not yet eligible to send.
+  - Common reasons:
+    - Waiting for allowed hours or days.
+    - Waiting for free capacity on a line.
+    - Waiting for a delay between campaign steps.
+  - Use this to monitor future workload and expected sends.
+
+- **pending / sending**
+  - The message is in the process of being sent.
+  - Use this to distinguish “actively in flight” from “just planned”.
+
+- **sent**
+  - Tuco successfully handed the message to the downstream channel (e.g. iMessage, SMS, email) according to that channel’s contract.
+  - Use this to:
+    - Trigger internal workflows (“message was sent”).
+    - Update activity feeds or timelines.
+
+- **delivered** (where supported)
+  - Tuco received a confirmation that the message reached the recipient’s device or mailbox.
+  - Not all channels support this; when they do, Tuco surfaces it clearly.
+  - Use this to:
+    - Measure true delivery rates.
+    - Trigger time‑based follow‑ups (“sent and delivered, now wait X days”).
+
+- **failed**
+  - Tuco determined that this message **cannot** be sent.
+  - Typical reasons include:
+    - Permanently invalid address.
+    - Hard rejection from the underlying channel.
+    - Configuration that makes the send impossible.
+  - Failed messages are not silently retried.
+  - Use this to:
+    - Flag data for cleanup.
+    - Alert operators for high failure rates on a campaign or line.
+
+- **fallback**
+  - The primary channel you wanted to use isn’t available for this recipient (for example, no iMessage‑capable address), or sending on that path is not safe.
+  - Tuco:
+    - Marks the message as `fallback`.
+    - Emits a clear event (see `/api-reference/message-webhooks`).
+  - Use this to:
+    - Switch to SMS or email, if appropriate.
+    - Tag leads as “not reachable on iMessage”.
+
+---
+
+## What Tuco Does vs What You Decide
+
+Tuco handles:
+
+- Running availability checks behind the scenes.
+- Respecting your time windows, day‑of‑week rules, and line limits.
+- Deciding when to treat an error as final vs something that can be retried internally.
+
+You handle:
+
+- **Business decisions** when you see `failed` or `fallback`:
+  - Whether to try another channel.
+  - Whether to mark a lead as needing attention.
+  - Whether to treat repeated failures as a sign to stop contacting a segment.
+- **Data hygiene**:
+  - Cleaning invalid numbers or emails.
+  - Updating lead records after repeated failures.
+- **Customer experience**:
+  - Avoiding aggressive retries in your own systems.
+  - Respecting consent and preferences when switching channels.
+
+This separation lets you rely on Tuco’s guardrails while still owning your customer‑facing behavior.
+
+---
+
+## Typical Failure & Fallback Scenarios
+
+### 1. Invalid or Out‑of‑Date Contact Info
+
+**What happens:**
+
+- You send to a phone or email that is no longer valid.
+- The underlying channel rejects the message.
+- Tuco marks the message as **failed** and surfaces a clear reason in the UI and/or API.
+
+**How to react:**
+
+- Suppress or clean the offending address in your own systems.
+- Consider updating your import or validation flows to catch these earlier.
+- Watch for patterns (e.g. a particular list or source producing many invalid contacts).
+
+---
+
+### 2. Recipient Does Not Support iMessage
+
+**What happens:**
+
+- Tuco determines that none of the stored addresses for a lead support iMessage.
+- The iMessage path is not used.
+- The message is marked as **fallback**, and a webhook event is emitted if configured.
+
+**How to react:**
+
+- Route follow‑up via your preferred alternative:
+  - SMS for time‑sensitive notifications.
+  - Email for longer‑form communication.
+- Tag the lead in your CRM as “no iMessage” so future campaigns choose appropriate channels.
+- Use `/features/check-availability` to periodically refresh availability and keep this accurate.
+
+---
+
+### 3. Limits, Time Windows, and Gaps
+
+**What happens:**
+
+- A message cannot be sent **right now** because:
+  - Daily limits on a line have been reached.
+  - You’re outside allowed hours or days.
+  - Your pacing rules between contacts on a line are still in effect.
+- Tuco leaves the message as **queued** and checks again later.
+
+**How to react:**
+
+- Treat **Queued** as “not attempted yet”, not as a failure.
+- If many messages stay queued for long periods:
+  - Add capacity by configuring more lines.
+  - Relax your timing windows, if consistent with your brand and compliance.
+  - Re‑evaluate how many campaigns you run in parallel on the same lines.
+
+---
+
+### 4. Sustained Problems on a Channel or Line
+
+**What happens:**
+
+- A line or channel experiences longer‑lasting issues.
+- Tuco protects recipients and your account by:
+  - Reducing or pausing sends on that path.
+  - Exposing more **failed**, **queued**, or **fallback** outcomes instead of forcing traffic through.
+
+**How to react:**
+
+- Use campaign and line‑level stats to:
+  - Spot unusually high **failed** or **fallback** rates.
+  - Identify which lines or campaigns are affected.
+- Temporarily:
+  - Shift traffic to healthier channels or lines.
+  - Pause specific campaigns while you investigate.
+
+You do **not** need to manage any recovery mechanics in Tuco itself—just respond to the visible outcomes.
+
+---
+
+## Using Outcomes in Your Own Systems
+
+You can consume delivery outcomes through:
+
+- The Tuco UI (for operational teams).
+- The API responses and list endpoints.
+- **Message webhooks** (see `/api-reference/message-webhooks`) for real‑time integration.
+
+Common patterns teams implement:
+
+- **CRM updates**
+  - Mark a contact as “Reached”, “Bounced”, or “Fallback to SMS” based on final status.
+  - Record last successful contact date vs last attempt date.
+
+- **Automated follow‑ups**
+  - Start a different sequence when a message fails.
+  - Trigger a task for a human when a VIP contact hits repeated failures.
+
+- **Health dashboards**
+  - Track ratios of `sent` / `delivered` / `failed` / `fallback` per campaign, line, or segment.
+  - Alert internally when failures or fallbacks cross a threshold.
+
+All of this can be done using only the **public surfaces** Tuco exposes—no need to depend on worker internals or implementation details.
+
+---
+
+## Best Practices
+
+- **Focus on trends, not one‑offs**
+  - Individual failures are normal.
+  - Spikes in `failed` or `fallback` rates are what deserve attention.
+
+- **Use fallbacks thoughtfully**
+  - Treat `fallback` as a chance to choose the channel that best fits the moment.
+  - Avoid automatically “spamming in every channel” after a single fallback event.
+
+- **Keep data clean**
+  - Clean or suppress addresses that repeatedly fail.
+  - Feed learnings back into your imports and validation rules.
+
+- **Respect consent**
+  - Before reacting to a failure or fallback with another channel, ensure your consent and opt‑out rules allow it.
+  - See `/features/compliance-and-optouts` for patterns.
+
+Handled this way, Tuco’s outcomes give you **clear, actionable signals** without revealing how the underlying infrastructure works—and allow you to design robust, customer‑friendly journeys on top. 
+

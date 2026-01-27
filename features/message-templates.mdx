@@ -1,0 +1,224 @@
+---
+title: "Message Templates & Personalization"
+description: "Designing, personalizing, and managing Tuco AI message content safely and at scale"
+icon: "file-pen"
+---
+
+## Overview
+
+Tuco AI lets you send highly personalized messages at scale by combining:
+
+- **Static templates** you design.
+- **Dynamic data** from leads and external systems.
+
+This page focuses on recommended patterns for:
+
+- Template structure and variable usage.
+- Personalization safety.
+- Testing and operational practices.
+
+It does not depend on any internal APIs—only on behavior visible via the app and documented endpoints.
+
+---
+
+## Template Concepts
+
+Think of a Tuco message as:
+
+- A **base template**:
+  - Static text and optional placeholders (variables).
+- **Data bindings**:
+  - Lead fields (first name, company, role, etc.).
+  - Custom fields from your systems.
+
+Examples of common placeholders:
+
+- `{firstName}`
+- `{lastName}`
+- `{companyName}`
+- `{jobTitle}`
+
+---
+
+## Variable Replacement Behavior (Conceptual)
+
+When a message is generated for a particular lead:
+
+1. Tuco reads the template text.
+2. For each placeholder:
+   - Looks up the corresponding value on the lead or context object.
+3. If a value is:
+   - **Present**: it replaces the placeholder.
+   - **Missing**: it may produce an empty string or a fallback value, depending on your pattern.
+
+To avoid awkward messages:
+
+- Always design templates with **optional content** in mind.
+- Use patterns that still read well if some fields are missing.
+
+---
+
+## Safe Template Patterns
+
+### 1. Optional Fields with Natural Defaults
+
+Instead of:
+
+> "Hi {firstName} {lastName}, I saw you work at {companyName} as a {jobTitle}."
+
+Prefer:
+
+> "Hi {firstName}, I saw you work at {companyName}."
+
+Where:
+
+- `{firstName}` is likely to be present (or you fall back to a neutral greeting).
+- `{companyName}` is often available and safe to include.
+- `{jobTitle}` may be omitted entirely to avoid:
+  - "as a " with nothing after it.
+
+### 2. Guarding Optional Sections Upstream
+
+If your application generates templates programmatically:
+
+- Only inject optional phrases if the underlying data exists.
+
+For example (pseudo-code in your own system):
+
+```pseudo
+text = "Hi {firstName}"
+if companyName exists:
+  text += ", I saw you work at {companyName}"
+text += "."
+```
+
+This ensures that if `companyName` is missing, the resulting message still reads naturally.
+
+---
+
+## Personalization Sources
+
+### Lead Fields
+
+Base personalization can use:
+
+- Lead’s:
+  - First name / last name.
+  - Company name.
+  - Role or job title.
+  - Custom fields you define.
+
+These fields are available in Tuco once you:
+
+- Import leads via CSV/CRM.
+- Create them via the Leads API.
+
+### External Systems
+
+If you integrate Tuco with external systems (e.g. CRM, CDP):
+
+- Your backend can:
+  - Fetch additional context per lead.
+  - Build final message bodies incorporating that data before calling Tuco.
+
+In this model:
+
+- Tuco receives the **fully rendered message**.
+- Tuco still handles delivery, limits, and tracking.
+
+---
+
+## Template Testing Best Practices
+
+### Static Testing
+
+Before using a template in production:
+
+- Test it with:
+  - Complete data.
+  - Missing optional fields.
+  - Edge cases (short names, unusual characters).
+
+Have reviewers read:
+
+- Actual example messages generated from real or realistic test contacts.
+
+### In-App Previews
+
+If the Tuco UI or your custom UI supports it:
+
+- Use preview features to see:
+  - How a template renders for a specific lead.
+  - How segments of leads might see different variations.
+
+### Staging Campaigns
+
+Use non-production workspaces:
+
+- Run small campaigns against test contacts.
+- Confirm:
+  - Messages look correct on actual devices.
+  - Personalization behaves as expected.
+
+---
+
+## Compliance & Content Quality
+
+While message content is up to you, for best results:
+
+- **Clarity and brevity**:
+  - Keep messages focused and concise.
+  - Avoid overloading templates with too many dynamic inserts.
+
+- **Tone**:
+  - Ensure tone aligns with your brand and use case.
+  - Avoid language that could be misinterpreted when partial data is missing.
+
+- **Consent**:
+  - Only message recipients who have given appropriate consent.
+  - For more on consent and opt-outs, see `/features/compliance-and-optouts`.
+
+---
+
+## Operational Considerations
+
+### Versioning Templates
+
+In your own systems:
+
+- Keep track of:
+  - Template versions.
+  - Which campaigns used which versions.
+
+This helps when:
+
+- Comparing performance across iterations.
+- Investigating issues tied to specific content changes.
+
+### Rollbacks
+
+Have a plan for:
+
+- Rolling back to a previous template version quickly if:
+  - A personalization bug is discovered.
+  - A compliance issue is identified.
+
+Use:
+
+- Feature flags or config toggles to switch templates without redeploying code.
+
+---
+
+## Summary
+
+By treating message templates as:
+
+- Carefully designed base texts, and
+- Composed with safe personalization patterns,
+
+you can:
+
+- Deliver highly relevant outreach at scale.
+- Avoid awkward, malformed messages.
+- Maintain enterprise-grade standards for testing, governance, and compliance—all while leveraging Tuco AI’s delivery, limits, and tracking capabilities.
+

@@ -1,0 +1,139 @@
+---
+title: "Campaigns FAQ"
+description: "Deep-dive FAQs about campaign creation, limits, timing, and edge cases"
+icon: "bullhorn"
+---
+
+## Campaign Creation & Configuration
+
+<AccordionGroup>
+  <Accordion title="Do campaigns create messages immediately or just-in-time?" icon="circle-question">
+    When you launch a campaign, Tuco:
+
+    - Creates message records for each `(lead, step)` combination up front.
+    - Sets their initial status to `queued`.
+    - Attaches configuration such as step delays, line assignments, and batch identifiers.
+
+    Actual sending is deferred to the workers, which decide when each `queued` message can safely move to `pending` and ultimately `sent`.
+  </Accordion>
+
+  <Accordion title="How does Tuco assign lines across leads in a campaign?" icon="share-nodes">
+    Tuco uses a **round-robin strategy** across eligible lines:
+
+    - Only **active** lines with successful provisioning are considered.
+    - As it iterates through leads:
+      - Lead 1 → Line A
+      - Lead 2 → Line B
+      - Lead 3 → Line A
+      - Lead 4 → Line B
+      - and so on.
+
+    Once a lead is bound to a line for a campaign:
+
+    - All follow-up steps for that lead in that campaign use the **same line**, preserving conversation continuity.
+  </Accordion>
+
+  <Accordion title="What happens if I edit a campaign after launch?" icon="pen-to-square">
+    Edits fall into three broad categories:
+
+    - **Non-structural edits** (e.g. campaign name, description):
+      - Do not affect already-created messages.
+    - **Future-step edits** (changing content or delay of steps not yet sent):
+      - Behavior depends on when the worker reads the updated configuration vs pre-generated messages.
+      - In general, message records already created keep their existing content and schedule.
+    - **Structural edits** (adding/removing steps, changing lists):
+      - Can be complex and may not retroactively change existing messages.
+
+    For critical campaign modifications (especially in production), prefer:
+
+    - Pausing/ending the current campaign.
+    - Cloning and launching a new campaign with the desired configuration.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Limits, Timing & Prioritization
+
+<AccordionGroup>
+  <Accordion title="What if multiple campaigns share the same line?" icon="layer-group">
+    When several campaigns share one or more lines:
+
+    - Workers compute **per-line usage across all campaigns**.
+    - A campaign is processed only if line capacity is available.
+    - Campaigns are typically processed in order of `startedAt`, so older campaigns receive priority for any remaining capacity.
+
+    Practically:
+
+    - If one large campaign consumes most of a line’s capacity, others using the same line may see their messages stay `queued` longer.
+    - To avoid this, distribute load across more lines.
+  </Accordion>
+
+  <Accordion title="How are step delays enforced?" icon="clock">
+    For each lead and campaign step:
+
+    - Tuco records when the prior step was actually sent.
+    - It calculates `previousSentAt + delay` using the configured delay and unit.
+    - The next step can only become eligible (`pending`) once the current time is past that threshold.
+
+    For short delays (e.g. seconds), follow-ups may occur within the same processing cycle; for long delays (e.g. days), they are naturally spaced across future cycles.
+  </Accordion>
+
+  <Accordion title="Can I prioritize new leads over follow-up steps?" icon="ranking-star">
+    Yes, Tuco supports prioritizing **new conversations**:
+
+    - When enabled, workers will:
+      - Prefer sending first messages (step 1) to leads that haven’t been contacted yet.
+      - Only move on to follow-up steps once new-conversation capacity is exhausted or certain criteria are met.
+
+    This is especially useful when:
+
+    - You have strict new-conversation limits per line.
+    - You want to reach as many new leads as possible before scheduling follow-ups.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Failure Scenarios
+
+<AccordionGroup>
+  <Accordion title="What if a campaign is 'active' but nothing seems to send?" icon="circle-pause">
+    Check the following, in order:
+
+    - **Lines**:
+      - Are there any active, healthy lines attached to the campaign?
+      - Are lines hitting their per-day limits?
+    - **Time window & allowed days**:
+      - Is the current time within the campaign’s allowed send window?
+      - Is today allowed for sending?
+    - **Queued vs sent ratios**:
+      - Are message records present and all marked `queued`?
+      - Are any transitioning to `pending` or `sent` at all?
+
+    If lines are healthy and limits/time windows are not the issue, investigate:
+
+    - Worker processing health (whether messages are being evaluated regularly).
+    - Webhook behavior (to verify deliveries are being reported correctly).
+  </Accordion>
+
+  <Accordion title="Why are some contacts only getting the first step?" icon="list-ol">
+    Common reasons:
+
+    - The line used for that contact has reached its **total messages limit**, allowing the first message but preventing follow-ups.
+    - Step delays are long (e.g. days), and they simply haven’t elapsed yet.
+    - The line has become unhealthy, and, to preserve conversation continuity, follow-up messages for that contact were marked as `failed` rather than reassigned.
+
+    Use message histories and statuses to distinguish which case applies.
+  </Accordion>
+
+  <Accordion title="Can a campaign recover after all its lines have failed?" icon="heart-pulse">
+    Yes, once the underlying issues are resolved:
+
+    - Campaign is typically paused automatically when there are no usable lines.
+    - After at least one line becomes healthy again:
+      - You can resume the campaign from the app.
+      - Remaining `queued` messages will again be eligible for processing, subject to the usual limits and windows.
+  </Accordion>
+</AccordionGroup>
+

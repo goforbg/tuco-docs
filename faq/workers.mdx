@@ -1,0 +1,168 @@
+---
+title: "Background Processing & Reliability FAQ"
+description: "What you can expect from Tuco’s behind-the-scenes processing, without needing to know the internals"
+icon: "gears"
+---
+
+## How Tuco Works Behind the Scenes (From Your Perspective)
+
+Tuco uses background processing to turn your configuration and API calls into real‑world messaging activity. You don’t see the internal jobs or queues; you only see **observable behavior**:
+
+- Messages and campaigns move through clear, stable statuses.
+- Limits and time windows are respected without manual intervention.
+- Webhooks and analytics reflect what has actually happened.
+
+This FAQ explains what you can expect from that behavior and how to design integrations that work well with it—without exposing any proprietary implementation detail.
+
+---
+
+## Scheduling & Frequency
+
+### How quickly will my campaigns start sending?
+
+Once you:
+
+- Have active lines,
+- Launch a campaign, and
+- Are within your allowed time windows and limits,
+
+you should see messages begin to move from “planned” states (e.g. queued) to “sent/delivered” over the next few minutes.
+
+Tuco’s internal schedulers:
+
+- Continuously evaluate which messages are eligible to send.
+- Apply your limits and timing rules.
+- Move eligible messages forward without you having to poll or push them manually.
+
+You never need to run your own cron jobs against Tuco; you only react to the outcomes you see in the API, UI, and webhooks.
+
+---
+
+### Are sends guaranteed to be “exactly once”?
+
+At the level of your own data, Tuco is designed for **effectively‑once** behavior:
+
+- A given message record moves forward through its status lifecycle (queued → sent/delivered/failed/fallback).
+- Webhooks include stable identifiers so you can safely treat duplicates as no‑ops.
+
+From your perspective:
+
+- You should design your webhook consumers and internal updates to be **idempotent**:
+  - Applying the same event twice should not corrupt data.
+  - You can always check current status before “moving backwards”.
+
+You do not need to know how many internal retries happened—only that the end state you see is authoritative.
+
+---
+
+## Observability & Debugging (Customer View)
+
+### How can I tell if background processing is falling behind?
+
+Use Tuco’s visible surfaces and your own instrumentation:
+
+- In Tuco:
+  - Watch campaign and message stats:
+    - Growing **queued** counts that never move to **sent/delivered**.
+    - Unusual patterns in failed or fallback counts.
+  - Check line‑level views for health and usage.
+
+- In your own systems:
+  - Plot message webhooks over time.
+  - Watch for a drop in delivery or reply events when you expect activity.
+
+If messages stay queued for much longer than your typical pattern—even when you are within limits and time windows—that’s a signal to contact Tuco support or check any status page you’ve been provided.
+
+---
+
+### What logs should I rely on when debugging issues?
+
+You never need access to Tuco’s internal logs to debug typical issues. Instead, rely on:
+
+- **Your own application logs**
+  - API requests and responses to/from Tuco.
+  - When you created messages, launched campaigns, or changed settings.
+
+- **Webhook logs on your side**
+  - Incoming message outcome events (delivered, fallback, failed).
+  - Incoming reply events.
+  - Any errors or timeouts in your webhook handlers.
+
+- **Tuco UI and APIs**
+  - Message history and status for specific leads or campaigns.
+  - Counts and charts in the app that show throughput and outcomes.
+
+By correlating:
+
+- When you created or updated something,
+- What Tuco shows in its UI and APIs,
+- What webhooks you received,
+
+you can reconstruct what happened without needing to see any worker or queue internals.
+
+---
+
+## Integration Considerations
+
+### Do I need direct access to any internal processing services?
+
+No.
+
+- All integrations should use:
+  - The **public Tuco APIs** for reads and writes.
+  - The documented **webhooks** for event notifications.
+- Internal worker processes are an implementation detail Tuco can change without affecting your contracts.
+
+This gives you:
+
+- A stable, documented surface to build on.
+- Confidence that upgrades to Tuco’s internals won’t break your integration.
+
+---
+
+### How should I handle out-of-order or duplicate events?
+
+Because Tuco uses asynchronous processing and safe retry behavior, you may occasionally see:
+
+- Duplicate webhook events.
+- Events that arrive slightly out of order (for example, a delivered event arriving close in time to a sent event).
+
+Design your systems to be:
+
+- **Idempotent**
+  - Identify events using the IDs in the webhook payload.
+  - If you have already applied an event for a given message and status, treat the duplicate as a no‑op.
+
+- **Monotonic**
+  - Only move your local status **forward** (e.g. from queued → sent → delivered).
+  - Ignore any event that would move a message backwards in your own records.
+
+Following these patterns is enough; you never need to reason about Tuco’s internal queues or retry policies.
+
+---
+
+## Reliability Guarantees (From Your Side)
+
+Tuco’s background processing is built so that:
+
+- Your data is preserved safely.
+- Errors are surfaced as clear outcomes, not silent drops.
+- Limits and safety rules apply consistently across UI and API usage.
+
+From your perspective:
+
+- A write either:
+  - Succeeds and shows up in the UI and APIs, or
+  - Fails with a clear, documented error.
+- A message either:
+  - Reaches a visible outcome state (sent/delivered/failed/fallback), or
+  - Remains in a clearly non‑terminal state (queued/pending) while it is still being considered.
+
+You can confidently build:
+
+- Automations keyed off of these states.
+- Dashboards that compare planned vs completed sends.
+- Alerting around sudden changes in outcome patterns.
+
+All without needing any visibility into Tuco’s internal workers, queues, or infrastructure layout. 
+

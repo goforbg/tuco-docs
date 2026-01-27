@@ -1,0 +1,150 @@
+---
+title: "Message Webhooks"
+description: "How Tuco AI notifies your systems about message updates"
+icon: "webhook"
+---
+
+## What Message Webhooks Do
+
+Message webhooks keep your own systems in sync with what you see in Tuco.
+
+When you enable them, Tuco can send a short notification to a URL you control whenever certain message events occur, such as:
+
+- A message is marked as sent or delivered.
+- A message cannot be sent and is marked with a clear final state.
+- A recipient replies, where supported.
+
+The system automatically handles when to send these notifications; you only choose where they should go.
+
+---
+
+## Information You Receive
+
+Each webhook call includes enough information for you to:
+
+- Identify which message in your system the event relates to.
+- See the latest visible status of that message, including when it has failed or reached a fallback‑style outcome.
+- Link the event back to the related lead or workspace, where applicable.
+
+Data is preserved safely in Tuco, so webhook events always refer to records you can also see in the dashboard or via the standard APIs.
+
+You can safely use these events to decide when to trigger your own fallbacks, such as sending an SMS or WhatsApp message if a contact cannot be reached over iMessage or another preferred channel.
+
+---
+
+## How It Feels to Use
+
+Once configured, message webhooks behave like a stream of simple status updates from Tuco to your own backend.
+
+From your point of view:
+
+- Tuco sends concise notifications whenever something important happens.
+- Your systems can update their own records or dashboards using this information.
+- No ongoing manual intervention is required; the system automatically handles the underlying delivery.
+
+If you ever pause or change your webhook URL, Tuco simply stops or redirects these notifications based on the settings you control.
+
+---
+
+## Event Types & Payloads
+
+Tuco currently sends message webhooks for:
+
+- **`message.delivered`** – a message was confirmed delivered (where the channel supports it).  
+- **`message.fallback`** – the primary channel (for example, iMessage) cannot be used and you should decide what to do next.
+
+All payloads are JSON `POST` requests from Tuco to your configured endpoint.
+
+---
+
+### `message.delivered`
+
+Sent when a message has been delivered to the recipient (for channels where delivery receipts are available).
+
+```json
+{
+  "event": "message.delivered",
+  "messageId": "690d1c95984d3cdcac76e9ff",
+  "status": "delivered",
+  "message": "Hello from Tuco 👋",
+  "messageType": "imessage",
+  "recipientEmail": null,
+  "recipientPhone": "+12025551234",
+  "recipientName": "Jane Doe",
+  "leadId": "667f1f77bcf86cd799439012",
+  "workspaceId": "org_123",
+  "createdByUserId": "user_123",
+  "sentAt": "2025-10-15T14:30:00.000Z",
+  "timestamp": "2025-10-15T14:30:05.000Z"
+}
+```
+
+**Fields**
+
+- `event` – always `"message.delivered"` for this event type.  
+- `messageId` – ID of the message in Tuco (matches `/api/messages`).  
+- `status` – `"delivered"`.  
+- `message` – body text that was sent.  
+- `messageType` – `"imessage"`, `"sms"`, or `"email"`.  
+- `recipientEmail` / `recipientPhone` / `recipientName` – where the message went.  
+- `leadId` – lead involved, when known.  
+- `workspaceId` / `createdByUserId` – help you scope the event.  
+- `sentAt` – when the send was initiated.  
+- `timestamp` – when delivery was confirmed.
+
+You can safely key your own records on `messageId` plus `event` to keep updates idempotent.
+
+---
+
+### `message.fallback`
+
+Sent when Tuco determines that the primary channel (for example, iMessage) cannot be used for this recipient. This is **not** a technical failure; it’s an availability/business outcome.
+
+```json
+{
+  "event": "message.fallback",
+  "messageId": "690d1c95984d3cdcac76e9ff",
+  "status": "fallback",
+  "message": "Hello from Tuco 👋",
+  "messageType": "imessage",
+  "recipientEmail": "user@example.com",
+  "recipientPhone": "+12025551234",
+  "recipientName": "Jane Doe",
+  "leadId": "667f1f77bcf86cd799439012",
+  "workspaceId": "org_123",
+  "createdByUserId": "user_123",
+  "reason": "Prospect's iMessage not available on +12025551234, user@example.com",
+  "checkedAddresses": [
+    "+12025551234",
+    "user@example.com"
+  ],
+  "timestamp": "2025-11-06T22:10:05.864Z"
+}
+```
+
+**Fields**
+
+- `event` – `"message.fallback"`.  
+- `status` – `"fallback"`.  
+- `reason` – human‑readable explanation you can log or surface.  
+- `checkedAddresses` – addresses Tuco checked when deciding availability (for debugging/auditing).
+
+Common patterns:
+
+- Automatically trigger an SMS or email when you receive a `message.fallback` for an iMessage attempt.  
+- Flag the lead as “no iMessage” in your CRM so future campaigns pick more appropriate channels.
+
+---
+
+## Consuming Webhooks Safely
+
+When building your webhook consumer:
+
+- Treat `messageId` as the stable ID and `event` as the type.  
+- Make updates **idempotent**:
+  - If you’ve already processed a `(messageId, event)`, ignore duplicates.  
+  - Only move your local status **forward** (e.g. `"queued"` → `"sent"` → `"delivered"`), never backwards.
+- Log or store `workspaceId` and `leadId` so you can trace events back to the right tenant and contact.
+
+By treating message webhooks as append‑only signals and keeping your own updates idempotent, you can safely integrate Tuco’s delivery and fallback outcomes into your CRM, analytics, and automations without needing to know anything about the underlying worker implementation.
+

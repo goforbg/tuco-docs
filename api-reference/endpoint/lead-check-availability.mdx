@@ -1,0 +1,47 @@
+---
+title: "Check Lead Availability Endpoint"
+api: "GET /api/leads/check-availability"
+description: "Check if a specific lead is reachable via iMessage"
+---
+
+## Endpoint
+
+- **Method**: `GET`  
+- **Path**: `/api/leads/check-availability`
+
+Checks iMessage availability for a single Tuco lead and updates that lead’s availability status.
+
+---
+
+## Query Parameters
+
+- `id` (`string`, required) – the lead’s ID.
+
+Example:
+
+```bash
+GET /api/leads/check-availability?id=667f1f77bcf86cd799439012
+Authorization: Bearer tuco_xxx
+```
+
+---
+
+## Response
+
+```json
+{
+  "success": true,
+  "leadId": "667f1f77bcf86cd799439012",
+  "available": true,
+  "status": "available"
+}
+```
+
+`status` will be one of:
+
+- `"available"` – at least one stored address supports iMessage.  
+- `"unavailable"` – none of the stored addresses support iMessage.  
+- `"error"` – the check failed (for example, due to a temporary issue).
+
+The same status is written back to the lead, so you can also read it via the main Leads API.
+

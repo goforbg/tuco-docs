@@ -1,0 +1,75 @@
+---
+title: "Send Message Endpoint"
+api: "POST /api/messages"
+description: "Send a single iMessage, SMS, or email from a Tuco line"
+---
+
+## Endpoint
+
+- **Method**: `POST`  
+- **Path**: `/api/messages`
+
+This endpoint sends one message from a specific Tuco line to a single recipient.
+
+---
+
+## Request Body
+
+```json
+{
+  "message": "Hello from Tuco 👋",
+  "messageType": "imessage",
+  "fromLineId": "507f1f77bcf86cd799439011",
+  "recipientPhone": "+12025551234",
+  "recipientName": "Jane Doe",
+  "scheduledDate": "2025-10-15T14:30:00Z",
+  "batchId": "welcome-campaign-2025-10-15"
+}
+```
+
+**Required fields**
+
+- `message` – text content to send.  
+- `messageType` – one of:
+  - `"imessage"`
+  - `"sms"`
+  - `"email"`  
+- `fromLineId` – ID of the Tuco line that should send the message.  
+- Either:
+  - `recipientPhone` **or** `recipientEmail`, or  
+  - `leadId` (to send to an existing lead using their stored contact details).
+
+**Optional fields**
+
+- `recipientName` – friendly name for the recipient.  
+- `scheduledDate` – ISO‑8601 timestamp to schedule the send in the future.  
+- `batchId` – free‑form string to group related messages (for reporting).  
+- Time‑window settings (optional, to mirror campaign rules):
+  - `timezone` – IANA timezone (for example, `"America/New_York"`).  
+  - `sendWindowStart` / `sendWindowEnd` – e.g. `"09:00"` and `"17:00"`.  
+  - `allowedDaysOfWeek` – array of day indexes or names (e.g. `[1,2,3,4,5]` for weekdays).
+
+---
+
+## Response
+
+**Success (`201 Created`)**
+
+```json
+{
+  "success": true,
+  "message": {
+    "_id": "507f1f77bcf86cd799439012",
+    "message": "Hello from Tuco 👋",
+    "messageType": "imessage",
+    "status": "queued",
+    "fromLineId": "507f1f77bcf86cd799439011",
+    "recipientPhone": "+12025551234",
+    "recipientName": "Jane Doe",
+    "createdAt": "2025-10-15T14:30:00.000Z"
+  }
+}
+```
+
+If required fields are missing or invalid you receive a `400` with a clear error message. If the workspace is in read‑only mode (for example, due to billing) you receive a `402` with `code: "READ_ONLY"`. Authentication failures return `401`.
+

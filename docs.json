@@ -9,7 +9,7 @@
   },
   "favicon": "/images/tuco_v1_round.svg",
   "navigation": {
-    "tabs": [
+  "tabs": [
       {
         "tab": "Documentation",
         "groups": [
@@ -26,6 +26,58 @@
               "features/upload-leads",
               "features/check-availability",
               "features/send-messages"
+            ]
+          },
+          {
+            "group": "Campaigns & Messaging Engine",
+            "pages": [
+              "features/campaigns",
+              "features/failures-and-fallbacks",
+              "features/replies"
+            ]
+          },
+          {
+            "group": "Architecture & Operations",
+            "pages": [
+              "architecture/overview",
+              "architecture/workers",
+              "architecture/health-checks"
+            ]
+          },
+          {
+            "group": "Messaging & Compliance",
+            "pages": [
+              "features/message-templates",
+              "features/compliance-and-optouts"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "operations/runbook"
+            ]
+          },
+          {
+            "group": "Analytics & Reporting",
+            "pages": [
+              "analytics/events-and-metrics",
+              "analytics/export-strategies"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/hubspot"
+            ]
+          },
+          {
+            "group": "FAQ",
+            "pages": [
+              "faq",
+              "faq/campaigns",
+              "faq/workers",
+              "faq/integrations",
+              "faq/security-billing"
             ]
           }
         ]
@@ -45,7 +97,31 @@
               "api-reference/endpoint/create",
               "api-reference/endpoint/get",
               "api-reference/endpoint/delete",
+              "api-reference/endpoint/send-message",
+              "api-reference/endpoint/lead-check-availability",
+              "api-reference/endpoint/bulk-check-availability",
+              "api-reference/endpoint/campaign-add-lead",
               "api-reference/endpoint/webhook"
+            ]
+          },
+          {
+            "group": "Core Resources",
+            "pages": [
+              "api-reference/messages",
+              "api-reference/lines",
+              "api-reference/leads"
+            ]
+          },
+          {
+            "group": "Events & Webhooks",
+            "pages": [
+              "api-reference/message-webhooks"
+            ]
+          },
+          {
+            "group": "Errors & Limits",
+            "pages": [
+              "api-reference/errors"
             ]
           }
         ]

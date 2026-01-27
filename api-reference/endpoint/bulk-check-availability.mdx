@@ -1,0 +1,93 @@
+---
+title: "Bulk Availability Check Endpoint"
+api: "POST /api/leads/check-availability"
+description: "Bulk-check iMessage availability for many leads or a single address"
+icon: "circle-check"
+---
+
+## Endpoint
+
+- **Method**: `POST`  
+- **Path**: `/api/leads/check-availability`
+
+This endpoint lets you check iMessage availability for multiple leads at once, or for a single arbitrary address, using the same logic Tuco uses internally.
+
+---
+
+## Check a Single Address (Quick Check)
+
+Use this form to check one phone number or email address without creating a lead.
+
+```json
+{
+  "address": "+12025551234"
+}
+```
+
+**Response**
+
+```json
+{
+  "success": true,
+  "available": true,
+  "address": "+12025551234"
+}
+```
+
+---
+
+## Bulk Check by Lead IDs
+
+Provide a list of lead IDs in the current workspace. Tuco will:
+
+- Mark each lead as `availabilityStatus: "available"`, `"unavailable"`, or `"error"`.  
+- Return a summary of how many checks succeeded or failed.
+
+```json
+{
+  "leadIds": [
+    "667f1f77bcf86cd799439012",
+    "667f1f77bcf86cd799439013",
+    "667f1f77bcf86cd799439014"
+  ]
+}
+```
+
+**Response (synchronous small batch)**
+
+```json
+{
+  "success": true,
+  "checked": 3,
+  "successful": 3,
+  "errors": 0,
+  "results": [
+    {
+      "leadId": "667f1f77bcf86cd799439012",
+      "available": true,
+      "status": "available"
+    },
+    {
+      "leadId": "667f1f77bcf86cd799439013",
+      "available": false,
+      "status": "unavailable"
+    }
+  ],
+  "processingMode": "synchronous"
+}
+```
+
+For larger batches, Tuco automatically offloads work to a background job and responds with:
+
+```json
+{
+  "success": true,
+  "message": "Bulk availability check started in background",
+  "jobId": "bulk-availability-2025-10-15T14:30:00.000Z",
+  "checked": 1200,
+  "processingMode": "background"
+}
+```
+
+You can safely trigger this endpoint from your backend and then rely on the updated `availabilityStatus` field on each lead for downstream decisions (for example, whether to enroll a lead in an iMessage campaign or to prefer SMS/email).
+

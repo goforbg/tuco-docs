@@ -1,0 +1,62 @@
+---
+title: "Tuco API Keys"
+description: "Where your Tuco API key lives and how it is used"
+icon: "key"
+---
+
+## Where the API Key Lives
+
+Every Tuco workspace can have one or more API keys managed from within the product.
+
+In practice, this means:
+
+- Workspace owners and admins control which keys exist.
+- Keys can be created, renamed, or removed without affecting existing data.
+- Each key is clearly labeled so you know which environment or integration it is for.
+
+If you do not see an API key in your workspace, your Tuco admin can enable one for you.
+
+---
+
+## How the Key Is Used
+
+The Tuco API key is used as the single piece of authorization information on all server‑side API calls.
+
+From your point of view:
+
+- The same key works across all documented Tuco API endpoints.
+- Requests made with this key either succeed with clear confirmation or are rejected with an explicit error.
+- Disabling or rotating a key immediately stops further access with the old value.
+
+No additional tokens from external identity providers are required when calling the Tuco API from your backend.
+
+---
+
+## Finding or Rotating Your Key
+
+You never need to touch any internal systems to manage your Tuco API key.
+
+Instead:
+
+- Keys are created and rotated entirely from your Tuco workspace settings.
+- Changes take effect right away for all future calls that use the new value.
+- Old keys can be removed when no longer needed, without changing any of your stored data.
+
+If you are unsure who controls API keys for your company, check with your Tuco workspace owner or administrator.
+
+---
+
+## FAQs
+
+**How do I get an API key for the first time?**
+
+Your Tuco workspace comes with the ability to create an internal API key from within the product. A workspace owner or admin can generate one and share it with your engineering team using your usual secure channels.
+
+**Can I have separate keys for staging and production?**
+
+Yes. You can maintain multiple keys and decide which one each environment should use. The system automatically treats all valid keys for a workspace the same way from an access perspective.
+
+**What happens if my key is exposed?**
+
+You can immediately rotate or revoke the key from your Tuco workspace. New calls with the old key will stop working, and your existing data remains preserved safely.
+

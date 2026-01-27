@@ -1,0 +1,214 @@
+---
+title: "HubSpot Integration"
+description: "Connect Tuco to HubSpot so reps can see and trigger Tuco messages without leaving their CRM"
+icon: "hubspot"
+---
+
+## What the HubSpot Integration Does
+
+The Tuco–HubSpot integration lets your teams:
+
+- **Trigger Tuco messages from HubSpot**
+  - Use workflow actions to send iMessage/SMS/email via Tuco based on HubSpot events.
+
+- **See Tuco activity inside HubSpot**
+  - Show Tuco messages and replies as timeline events on HubSpot contacts.
+
+- **Control behavior from HubSpot UI**
+  - Configure how Tuco and HubSpot stay in sync using an in‑HubSpot settings experience.
+
+You do **not** need to know anything about Tuco’s internal services or HubSpot internals. You only work with:
+
+- HubSpot’s own app install and workflow configuration screens.
+- Tuco’s documented APIs and webhooks.
+
+---
+
+## High-Level Flow (From Your Perspective)
+
+### Sending from HubSpot via Tuco
+
+1. A HubSpot workflow runs (for example, “when a contact enters this list”).
+2. The workflow calls the installed Tuco HubSpot app action.
+3. The integration:
+   - Reads the HubSpot contact’s details (phone/email, name, etc.).
+   - Uses your configured Tuco credentials to call Tuco’s message API.
+4. Tuco:
+   - Creates and sends the message according to your Tuco configuration.
+   - Exposes outcomes (queued, sent, delivered, failed, fallback) via its UI, APIs, and webhooks.
+5. The integration writes a timeline event back to HubSpot so reps can see that Tuco messaged the contact.
+
+### Replies & Status Back to HubSpot
+
+1. Tuco ingests replies and delivery outcomes from supported channels.
+2. If you enable webhooks and the integration is configured:
+   - Tuco sends events to the integration’s backend.
+   - The integration updates HubSpot:
+     - Adding reply content to timelines.
+     - Updating custom properties where you’ve configured them.
+
+You control what appears in HubSpot through configuration; you never need to work with Tuco’s internal pipelines.
+
+---
+
+## Requirements & Setup
+
+### Prerequisites
+
+- An active Tuco workspace with:
+  - At least one usable line.
+  - API access enabled (see `/api-reference/introduction` and `/api-reference/api-keys`).
+- A HubSpot account with permission to install apps and configure workflows.
+
+### Installation (Conceptual Steps)
+
+1. **Install the Tuco app in HubSpot**
+   - From the HubSpot marketplace or a provided installation link.
+   - Approve the scopes requested by the app (for example, contacts, timeline, workflows).
+
+2. **Connect HubSpot to a Tuco workspace**
+   - In the integration’s settings screen inside HubSpot:
+     - Provide or select your Tuco workspace.
+     - Enter or confirm a Tuco API key that should be used on behalf of this HubSpot portal.
+   - The integration will use this key for all Tuco API calls originating from that HubSpot account.
+
+3. **Configure defaults**
+   - Choose:
+     - Preferred lines or workspaces (if you use multiple).
+     - Which Tuco activity types to mirror into HubSpot timelines.
+     - Any default templates or properties used by workflow actions.
+
+Exact button labels and UI layouts are subject to change; follow the prompts in the live app.
+
+---
+
+## Using Tuco in HubSpot Workflows
+
+Once installed and connected, you’ll see Tuco actions in HubSpot’s workflow editor (names may vary slightly by environment).
+
+### Typical Workflow Pattern
+
+**Example: Send Tuco message when a lead reaches a certain lifecycle stage**
+
+1. In HubSpot:
+   - Create or edit a contact‑based workflow.
+   - Set an enrollment trigger (for example, “Lifecycle stage becomes MQL”).
+2. Add a Tuco workflow action:
+   - Select the Tuco action (for example, “Send Tuco message”).
+   - Choose:
+     - Which Tuco workspace/line should be used (where applicable).
+     - A template or message body that may reference HubSpot contact properties.
+3. Save and turn on the workflow.
+
+From your perspective:
+
+- HubSpot triggers the integration whenever contacts reach your defined conditions.
+- The integration calls Tuco’s public APIs with the appropriate data.
+- You see messages and outcomes:
+  - In Tuco (for messaging operations and analytics).
+  - In HubSpot timelines (for rep visibility).
+
+---
+
+## Data That Flows Between Tuco and HubSpot
+
+### HubSpot → Tuco
+
+Common information sent from HubSpot to Tuco includes:
+
+- Contact identifiers:
+  - Email address.
+  - Phone number(s).
+- Basic profile fields:
+  - First name, last name, company, role.
+- Context for messaging:
+  - Workflow, list, or campaign that triggered the action.
+- Any variables you choose to pass into Tuco templates.
+
+Tuco uses this information to:
+
+- Create or update corresponding leads (depending on your setup).
+- Send messages from your configured lines.
+
+### Tuco → HubSpot
+
+Common information written back to HubSpot includes:
+
+- Timeline events:
+  - Outbound Tuco messages (channel, timestamp, optionally body or summary).
+  - Replies received from recipients.
+- Optional properties:
+  - Last contacted date.
+  - Last replied date.
+  - Simple status flags (for example, reachable via iMessage).
+
+The exact mapping of which properties are updated is controlled by the integration’s configuration and can evolve without changing Tuco’s internal architecture.
+
+---
+
+## Error Handling & Troubleshooting (Customer View)
+
+### Workflow action fails to send
+
+**Possible causes (from your side):**
+
+- The Tuco API key configured in HubSpot is missing or invalid.
+- The associated Tuco workspace has no active line available.
+- The HubSpot contact lacks the required contact information (for example, no phone or email).
+
+**What to do:**
+
+- In Tuco:
+  - Confirm that:
+    - The workspace referenced by the integration is active.
+    - At least one line is ready for use.
+- In HubSpot:
+  - Check the contact’s phone and email fields.
+  - Review any error messages surfaced in the workflow history or the Tuco card.
+- In your logging/monitoring:
+  - Look for any recorded errors from calls to Tuco’s public APIs.
+
+---
+
+### Tuco events not appearing on HubSpot timelines
+
+**Possible causes:**
+
+- The integration is not configured to write certain event types.
+- The mapping between Tuco leads and HubSpot contacts does not match (for example, mismatched email or phone).
+- There are issues with HubSpot API permissions or rate limits.
+
+**What to do:**
+
+- Verify configuration:
+  - In the integration settings, confirm which events should be mirrored.
+- Check data consistency:
+  - Ensure the identifiers Tuco uses for leads (email, phone) match HubSpot contact data.
+- Review any logs or alerts your integration exposes for:
+  - Errors writing to HubSpot.
+  - Authentication or permission issues.
+
+---
+
+## Best Practices
+
+- **Use workspace‑scoped Tuco API keys**
+  - Store one Tuco API key per HubSpot portal ↔ Tuco workspace connection.
+  - Rotate keys safely without changing your overall integration pattern.
+
+- **Template messages with CRM fields**
+  - Use HubSpot properties (name, company, role) as inputs to Tuco message templates.
+  - Keep the final rendering behavior in Tuco consistent with what you already use for campaigns.
+
+- **Monitor both sides**
+  - In Tuco:
+    - Track message outcomes, reply rates, and campaign health.
+  - In HubSpot:
+    - Track workflow execution and timeline events.
+
+- **Avoid leaking secrets**
+  - Never expose Tuco API keys in HubSpot client‑side code or in HubSpot properties visible to end‑users.
+  - Keep all credentials server‑side within the integration.
+
+Handled this way, the HubSpot integration becomes a clean, customer‑facing bridge between your CRM and Tuco, built entirely on documented public APIs and without exposing Tuco’s internal implementation to you or to competitors. 
+

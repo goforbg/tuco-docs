@@ -1,0 +1,303 @@
+---
+title: "Operations Runbook"
+description: "Step-by-step guidance for diagnosing and resolving common Tuco production issues from your side"
+icon: "screwdriver-wrench"
+---
+
+## Purpose of This Runbook
+
+This runbook is for **your** on‑call engineers, SREs, and operators.
+
+It assumes:
+
+- You use Tuco only via documented public APIs and webhooks.
+- You rely on Tuco’s UI, APIs, and events—not its internal services or logs.
+
+The goal is to give you **practical, observable steps** for common situations, without exposing any proprietary implementation details.
+
+---
+
+## 1. Messages Not Sending as Expected
+
+### Symptom
+
+- Campaigns look active, but:
+  - Few or no new messages appear as **sent/delivered**.
+  - You see fewer Tuco message webhooks in your systems than expected.
+
+### Checks
+
+1. **Are you actually creating messages?**
+   - In Tuco:
+     - Check the campaign or Messages view:
+       - Do you see new messages appearing with early statuses (for example, queued)?
+   - In your own data:
+     - If you mirror messages, confirm that new records are being created when you call Tuco.
+
+2. **Are you within your own configuration limits?**
+   - In Tuco:
+     - Look at the lines used by the campaign:
+       - Are they active?
+       - Do you see any warnings about limits or availability?
+
+3. **Are time windows and days configured as you expect?**
+   - Confirm:
+     - That current time is within allowed hours.
+     - That today is an allowed day for sending.
+
+4. **What do webhooks show?**
+   - In your logs:
+     - Check whether:
+       - Outcome webhooks (delivered / fallback / failed) are still arriving.
+       - Their volume has recently dropped.
+
+### Actions
+
+- **If messages are not even being created:**
+  - Inspect your integration:
+    - Are API calls to Tuco failing?
+    - Have you recently changed authentication or endpoints?
+
+- **If messages are created but stay queued:**
+  - Treat this as a sign that limits or timing rules are keeping them on hold.
+  - Consider:
+    - Adding more lines.
+    - Adjusting windows or pacing, if appropriate.
+
+- **If message creation and queuing look normal but nothing progresses:**
+  - Check any Tuco status communication you have (for example, a status page).
+  - Contact Tuco support with:
+    - A small set of message IDs.
+    - Rough timestamps and workspace IDs.
+
+---
+
+## 2. High Rate of Failed Messages
+
+### Symptom
+
+- Many messages in a campaign or workspace show status **failed**.
+- Your dashboards or exports show a spike in failures.
+
+### Checks
+
+1. **Sample failed messages**
+   - In Tuco:
+     - Open a few failed messages and read the visible reason text.
+   - Look for patterns:
+     - Invalid addresses?
+     - Blocked or rejected by channel?
+
+2. **Segment by source**
+   - Are failures concentrated in:
+     - A particular list or import?
+     - A specific integration (for example, a given CRM connector)?
+
+3. **Check recent changes**
+
+   - On your side:
+     - Did you recently change your data import, normalization, or validation?
+   - In your messaging strategy:
+     - Did you change templates, targeting, or types of messages?
+
+### Actions
+
+- **If failures are caused by bad data:**
+  - Clean or suppress invalid email addresses or phone numbers.
+  - Tighten validation and normalization in your upstream systems.
+
+- **If failures align with a particular segment or campaign:**
+  - Pause or reduce volume for that campaign.
+  - Investigate whether the content or targeting is causing issues on the recipient side.
+
+- **If failures are broad and unexpected:**
+  - Use your webhook and API logs to gather:
+    - Example message IDs.
+    - Visible reason texts.
+  - Share that sample with Tuco support for deeper investigation.
+
+---
+
+## 3. Many Fallback Events
+
+### Symptom
+
+- You see many messages with status **fallback** or many `fallback`‑style events in webhooks.
+- Campaigns relying heavily on iMessage appear to be under‑delivering.
+
+### Checks
+
+1. **Interpret what fallback means for your setup**
+   - In general, fallback indicates:
+     - The primary channel (e.g. iMessage) isn’t available or appropriate.
+   - It does **not** by itself mean Tuco is down.
+
+2. **Review data quality**
+   - Are phone numbers:
+     - Stored in an appropriate format (for example, E.164)?
+     - Using correct country codes?
+   - Are email addresses valid and mapped correctly?
+
+3. **Segment by source**
+   - Are fallbacks concentrated:
+     - In a particular import or list?
+     - For a region or provider?
+
+### Actions
+
+- **Improve data quality**
+  - Normalize phone numbers and emails.
+  - Ensure the most reliable addresses are stored as primaries.
+
+- **Adjust channel strategy**
+  - For segments with consistently high fallbacks:
+    - Prefer SMS or email as the primary channel.
+    - Reserve iMessage for those with confirmed availability.
+
+Use `/features/check-availability` to periodically refresh your view of who can actually be reached via iMessage.
+
+---
+
+## 4. Webhooks Not Reaching Your Systems
+
+### Symptom
+
+- You stop seeing Tuco webhooks in your logs.
+- Your downstream automations or dashboards stop updating.
+
+### Checks
+
+1. **Verify your endpoint health**
+   - Confirm:
+     - The URL configured in Tuco is correct.
+     - Your endpoint is reachable via HTTPS from the public internet.
+   - Use your own health checks where possible.
+
+2. **Check your logs**
+   - Look for:
+     - Any inbound requests from Tuco.
+     - HTTP status codes your endpoint is returning.
+     - Timeouts or rate‑limit defenses on your side.
+
+3. **Authentication**
+   - Make sure:
+     - Any shared secrets or API keys used for webhook auth are up to date.
+     - Recent rotations are reflected both in Tuco’s settings and your code.
+
+### Actions
+
+- **If your endpoint is the problem:**
+  - Fix underlying issues (deployment problems, certificate issues, firewall changes).
+  - Once stable, re‑enable or reconfirm webhook configuration in Tuco.
+
+- **If you changed authentication:**
+  - Align Tuco’s configured secret/token with what your endpoint now expects.
+
+- **To improve resilience going forward:**
+  - Use a lightweight ingress layer that:
+    - Authenticates and validates requests.
+    - Quickly enqueues them to an internal queue.
+    - Responds with success before heavy processing.
+
+---
+
+## 5. Read‑Only or Billing‑Related Errors
+
+### Symptom
+
+- API writes begin failing with codes or messages indicating **read‑only** or billing issues.
+- New messages or leads are not being created, even though reads still work.
+
+### Checks
+
+1. **Inspect error responses**
+   - In your logs:
+     - Confirm that responses from Tuco explicitly mention a read‑only or billing state.
+
+2. **Determine scope**
+   - Identify:
+     - Which workspace(s) are affected.
+     - Whether dev/stage/prod are all impacted or just one environment.
+
+### Actions
+
+- **Operationally**
+  - Stop automated retries for writes to the affected workspace; they will continue to fail until resolved.
+  - If you surface Tuco‑driven features in your own UI, show a clear message to internal users such as “Messaging is temporarily disabled; please update billing in Tuco.”
+
+- **Remediation**
+  - Have a Tuco admin or billing owner:
+    - Resolve any outstanding billing issue in the Tuco app.
+  - Once resolved:
+    - Verify that new messages and leads can again be created successfully.
+
+---
+
+## 6. Debugging a Specific Lead or Conversation
+
+### Symptom
+
+- A particular contact’s journey looks wrong:
+  - Missing steps.
+  - Unexpected status changes.
+  - Replies not appearing where you expect.
+
+### Checks
+
+1. **Trace the history in Tuco**
+   - In the Tuco UI:
+     - Open the lead or conversation view.
+     - List all messages in order with their statuses and timestamps.
+
+2. **Compare with your own systems**
+   - In your CRM or backend:
+     - Confirm that:
+       - Your records match Tuco’s message history.
+       - You have (or have not) ingested the associated webhooks.
+
+3. **Look for configuration differences**
+   - For the relevant campaigns or templates, confirm:
+     - Time windows, days, and limits.
+     - Whether replies should stop future steps.
+
+### Actions
+
+- **If the discrepancy is on your side:**
+  - Fix your webhook consumer, data mapping, or UI.
+
+- **If the discrepancy appears to be in Tuco:**
+  - Gather:
+    - Workspace ID (if available).
+    - Lead identifier.
+    - A handful of message IDs and timestamps.
+  - Share this context with Tuco support for further investigation.
+
+---
+
+## 7. General Best Practices for Operations
+
+- **Prefer clear contracts over internal details**
+  - Rely on:
+    - Documented APIs.
+    - Webhook schemas.
+    - Status codes and visible outcomes.
+  - Avoid depending on assumptions about Tuco’s internal workers, queues, or file layouts.
+
+- **Design for idempotency and eventual consistency**
+  - Treat every webhook or API response as something that might arrive twice or slightly out of order.
+  - Always reconcile against current state where possible.
+
+- **Monitor what you can see**
+  - Build dashboards and alerts around:
+    - Message outcome distributions.
+    - Webhook delivery success/failure.
+    - Tuco API error codes.
+
+- **Document your own playbooks**
+  - Use this runbook as a starting point and:
+    - Add environment‑specific steps.
+    - Add contact information for your internal owners.
+    - Add links to your own status pages and tooling.
+
+These practices let you run Tuco as a dependable piece of your stack, using only the stable, customer‑visible interfaces and without any dependence on proprietary implementation details. 
+

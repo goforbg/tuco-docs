@@ -1,0 +1,180 @@
+---
+title: "Replies & Inbox"
+description: "See and use replies from your recipients in Tuco, your CRM, and your own workflows"
+icon: "inbox"
+---
+
+## What Reply Handling Gives You
+
+Tuco doesn’t just send messages—it also **captures replies**, links them back to the right lead and conversation, and makes them available to you:
+
+- In the Tuco UI (inboxes, timelines, and campaign views).
+- Through APIs and exports.
+- Via webhooks you can plug into your own systems.
+
+From your point of view, replies become a first‑class signal you can use to:
+
+- Route conversations to humans.
+- Update CRM timelines.
+- Trigger follow‑ups or automations.
+
+You never need to manage how replies are matched internally; Tuco handles that.
+
+---
+
+## How Replies Show Up in Tuco
+
+When a recipient replies on a supported channel:
+
+- The reply is attached to:
+  - The relevant **lead**, where known.
+  - The originating **campaign** or message, where a match is clear.
+- The reply content and timestamp are visible:
+  - In the Tuco app (conversation view, lead history, campaign stats).
+  - Through public APIs and exports.
+
+Typical things your team can see:
+
+- Last reply content and time for each lead.
+- Whether a reply was part of a specific campaign step or a one‑off message.
+- Which line and channel the reply came back on.
+
+---
+
+## Using Replies in Your Workflows
+
+Replies are especially powerful when you connect them to your own tools.
+
+### In your CRM
+
+By consuming reply events (see `/api-reference/message-webhooks`), you can:
+
+- Add timeline entries with:
+  - Reply text.
+  - When it was received.
+  - Which campaign or message it refers to.
+- Update fields like:
+  - “Last replied at”.
+  - “Reply sentiment” (if you classify it).
+
+This gives sales and support teams a complete picture of conversations without leaving the CRM.
+
+### In your automations
+
+Replies can be treated as triggers for:
+
+- Moving a lead to the next stage in your funnel.
+- Creating tasks for an owner to respond.
+- Stopping or skipping later campaign steps for that lead.
+- Performing routing (for example, assigning conversations by region or product line).
+
+You decide the rules in your own systems; Tuco provides reliable events with stable identifiers.
+
+---
+
+## Reply Webhooks (Conceptual Overview)
+
+When you enable reply webhooks, Tuco sends a notification to your backend whenever a new reply is recorded.
+
+At a high level, each event includes:
+
+- **Which message** was replied to (when known).
+- **Which lead** it relates to (when known).
+- **Which workspace and line** own the conversation.
+- **The body of the reply**.
+- **Timestamps** so you can order events in your own logs.
+
+For concrete field names and shapes, see `/api-reference/message-webhooks`. Those schemas are the stable contracts you should integrate against; you do not need to know anything about the internal bridging or storage layers.
+
+---
+
+## Behavior When No Perfect Match Exists
+
+In real life, you may see replies that:
+
+- Come from a contact you messaged long ago.
+- Come from a slightly different address or number than the one you used.
+- Don’t clearly match a recent outbound message.
+
+From your perspective:
+
+- Tuco will still try to associate the reply with:
+  - The closest known lead.
+  - The most relevant recent conversation.
+- When a clean match isn’t possible, Tuco:
+  - Avoids guessing in ways that would corrupt your data.
+  - Still preserves the raw reply information where it can be safely attached.
+
+Because of this, you can trust that:
+
+- When a reply is shown as belonging to a lead or campaign, Tuco has already done the heavy lifting to match it.
+- You’re not exposed to the internal matching heuristics—only to outcomes that are safe to build on.
+
+---
+
+## Patterns for Classifying Replies
+
+Many teams treat replies as more than just free‑form text. Common patterns include:
+
+- **Interest level**
+  - “Interested”, “Not now”, “Not interested”.
+- **Intent**
+  - “Book a meeting”, “Ask a question”, “Negotiate pricing”.
+- **Compliance**
+  - “Opt‑out” or “Unsubscribe” messages (see `/features/compliance-and-optouts`).
+
+You can implement classification:
+
+- In your own backend by:
+  - Examining reply text from webhooks.
+  - Applying your own NLP models or rule‑based logic.
+- In your CRM using:
+  - Formulas or automation workflows acting on the reply content and tags.
+
+Tuco’s responsibility is to deliver the raw reply in a consistent format and context; your responsibility is to decide how to interpret and act on it.
+
+---
+
+## Operational & Analytics Use Cases
+
+Once replies are flowing reliably, you can:
+
+- **Measure engagement**
+  - Reply rates per campaign, per segment, or per rep.
+  - Breakdown of classifications (e.g. positive vs negative replies).
+
+- **Improve targeting**
+  - Identify segments that consistently reply positively.
+  - Suppress or adjust campaigns for segments with high complaint or opt‑out replies.
+
+- **Refine content**
+  - Compare reply patterns across different templates.
+  - Use replies to inform future copy and cadences.
+
+All of these insights come from the data Tuco already exposes; you never need to access any internal worker endpoints or logs.
+
+---
+
+## Best Practices
+
+- **Normalize identifiers upstream**
+  - Store phone numbers in a consistent format (e.g. E.164).
+  - Lowercase emails before storing.
+  - This makes reply‑to‑lead matching more accurate.
+
+- **Keep one source of truth for routing**
+  - Decide in your own systems how replies:
+    - Are assigned to owners.
+    - Affect deal or account stages.
+
+- **Respect consent and expectations**
+  - Use reply content to:
+    - Honor opt‑outs quickly.
+    - Avoid over‑messaging after clear “not interested” replies.
+
+- **Log and monitor**
+  - Capture reply events in your logging and analytics tools.
+  - Watch for sudden changes in reply volume or tone that may indicate an issue with a campaign or template.
+
+Handled this way, Tuco’s reply features give you a reliable **feedback loop** for your outreach, while keeping all underlying implementation detail safely abstracted away. 
+

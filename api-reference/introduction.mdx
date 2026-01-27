@@ -1,400 +1,80 @@
 ---
-title: "API Introduction"
-description: "Get started with the Tuco AI REST API"
+title: "API Overview"
+description: "How the Tuco AI API behaves from your point of view"
 icon: "code"
 ---
 
-## Overview
+## What the API Provides
 
-The Tuco AI API provides programmatic access to all platform features including lead management, availability checking, and message sending. Build custom integrations, automate workflows, and extend Tuco's capabilities to fit your needs.
+The Tuco AI API lets your own systems work directly with the same data you see in the Tuco dashboard.
 
-<Card title="Base URL" icon="link">
-  ```
-  https://api.tuco.ai/v1
-  ```
-</Card>
+You can:
 
----
+- Create and update leads.
+- View and organize leads and lines.
+- Send messages through your approved sending identities.
+- Receive notifications when important events occur.
 
-## Authentication
-
-All API requests require authentication using Clerk tokens in the Authorization header.
-
-### Getting Your Token
-
-<Steps>
-  <Step title="Sign In">
-    Log in to your Tuco AI account at [app.tuco.ai](https://app.tuco.ai)
-  </Step>
-  
-  <Step title="Generate Token">
-    Navigate to **Settings → API Keys** and generate a new token
-  </Step>
-  
-  <Step title="Copy Token">
-    Copy your token and store it securely (it won't be shown again)
-  </Step>
-</Steps>
-
-### Using Your Token
-
-Include your token in the Authorization header of every request:
-
-```bash
-curl https://api.tuco.ai/v1/leads \
-  -H "Authorization: Bearer YOUR_CLERK_TOKEN" \
-  -H "Content-Type: application/json"
-```
-
-<Warning>
-**Keep your API token secure!** Never expose it in client-side code or public repositories.
-</Warning>
+The system automatically keeps behavior consistent between the API and the product UI, so the same actions feel familiar in both places.
 
 ---
 
-## Request Format
+## Access & Authentication
 
-All POST and PUT requests must include a JSON body with the `Content-Type: application/json` header.
+API access is controlled from within your Tuco workspace.
 
-### Headers
+You decide:
 
-```json
-{
-  "Content-Type": "application/json",
-  "Authorization": "Bearer YOUR_CLERK_TOKEN"
-}
-```
+- Which workspaces may use the API.
+- Which environments may use production data.
 
-### Example Request
-
-```bash
-POST /api/leads
-Content-Type: application/json
-Authorization: Bearer clerk_token_xxxxx
-
-{
-  "leads": [
-    {
-      "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com",
-      "phone": "+12025551234"
-    }
-  ],
-  "listId": "507f1f77bcf86cd799439011"
-}
-```
+Once access is enabled, you receive credentials that allow your backend to act on behalf of your workspace. No action is required from you to keep these credentials recognized by Tuco; if they need to be changed or rotated, you handle that entirely from your own settings.
 
 ---
 
-## Response Format
+## Authorization with Tuco API Keys
 
-All responses are returned in JSON format with consistent structure.
+Tuco uses a workspace‑level API key for server‑side access.
 
-### Success Response
+From your perspective:
 
-```json
-{
-  "success": true,
-  "data": {
-    // Response data here
-  }
-}
-```
+- Each key clearly belongs to a specific workspace.
+- You can enable or disable keys without affecting the rest of the product.
+- Requests made with a valid key are treated as coming from your workspace.
 
-### Error Response
-
-```json
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Missing required field: email"
-  }
-}
-```
+You use the same Tuco key across all documented endpoints. For details on where to find this key and how it appears in the header, see `/api-reference/api-keys`.
 
 ---
 
-## HTTP Status Codes
+## Request & Response Shape
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `200` | OK | Request succeeded |
-| `201` | Created | Resource created successfully |
-| `400` | Bad Request | Invalid request data |
-| `401` | Unauthorized | Missing or invalid authentication |
-| `403` | Forbidden | Insufficient permissions |
-| `404` | Not Found | Resource not found |
-| `429` | Too Many Requests | Rate limit exceeded |
-| `500` | Internal Server Error | Server error occurred |
+All endpoints follow a simple pattern:
 
----
+- A request either **succeeds** and confirms what was accepted.
+- Or it **fails** and clearly indicates why.
 
-## Rate Limits
+You can rely on:
 
-To ensure fair usage and platform stability, API requests are rate limited.
+- Standard HTTP status codes to understand whether a call worked.
+- Human‑readable messages that explain what went wrong when something is rejected.
 
-<CardGroup cols={2}>
-  <Card title="Free Plan" icon="gauge-low">
-    **100 requests/minute**
-    
-    1,000 requests/day
-  </Card>
-  
-  <Card title="Premium Plan" icon="gauge-high">
-    **1,000 requests/minute**
-    
-    100,000 requests/day
-  </Card>
-</CardGroup>
-
-### Rate Limit Headers
-
-Every response includes rate limit information:
-
-```
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1634567890
-```
-
-<Tip>
-When you exceed the rate limit, you'll receive a `429 Too Many Requests` response. Implement exponential backoff in your application to handle this gracefully.
-</Tip>
+Data is preserved safely, so successful calls appear in the Tuco UI and can be used in campaigns, reporting, and audits.
 
 ---
 
-## Pagination
+## Reliability & Limits
 
-List endpoints support pagination to handle large datasets efficiently.
+The API is designed so that normal usage from typical business systems works without special tuning.
 
-### Query Parameters
+If you reach a documented limit, you see clear error responses and nothing is changed unexpectedly. The system automatically handles internal protections to keep your account and recipients safe.
 
-<ParamField path="page" type="integer" default="1">
-  Page number to retrieve
-</ParamField>
-
-<ParamField path="limit" type="integer" default="50">
-  Number of items per page (max: 100)
-</ParamField>
-
-### Example Request
-
-```bash
-GET /api/leads?page=2&limit=25
-```
-
-### Paginated Response
-
-```json
-{
-  "success": true,
-  "data": [...],
-  "pagination": {
-    "page": 2,
-    "limit": 25,
-    "totalPages": 10,
-    "totalItems": 250,
-    "hasNext": true,
-    "hasPrev": true
-  }
-}
-```
+For specific status codes and common outcomes, see `/api-reference/errors`.
 
 ---
 
-## Webhooks
+## SDKs & Tools (Coming Soon)
 
-Receive real-time notifications for events in your account.
+Official SDKs and helper libraries for popular languages are **Coming Soon**.
 
-<Card title="Configure Webhooks" icon="webhook" href="/api-reference/endpoint/webhook">
-  Learn how to set up and use webhooks
-</Card>
+They will focus on giving you a smoother developer experience without exposing any internal implementation details of Tuco AI.
 
-### Available Events
-
-- `lead.created` - New lead added
-- `lead.updated` - Lead information changed
-- `message.sent` - Message successfully delivered
-- `message.failed` - Message delivery failed
-- `message.scheduled` - Message scheduled for future delivery
-- `availability.checked` - Availability check completed
-
----
-
-## SDKs & Libraries
-
-Official SDKs for popular programming languages (coming soon):
-
-<CardGroup cols={3}>
-  <Card title="Node.js" icon="node">
-    ```bash
-    npm install @tuco/api
-    ```
-  </Card>
-  
-  <Card title="Python" icon="python">
-    ```bash
-    pip install tuco-api
-    ```
-  </Card>
-  
-  <Card title="Ruby" icon="gem">
-    ```bash
-    gem install tuco-api
-    ```
-  </Card>
-</CardGroup>
-
----
-
-## API Endpoints
-
-Explore our API endpoints:
-
-<CardGroup cols={2}>
-  <Card
-    title="Create Lead"
-    icon="plus"
-    href="/api-reference/endpoint/create"
-  >
-    Add new leads to your workspace
-  </Card>
-  
-  <Card
-    title="Get Leads"
-    icon="list"
-    href="/api-reference/endpoint/get"
-  >
-    Retrieve lead data
-  </Card>
-  
-  <Card
-    title="Delete Lead"
-    icon="trash"
-    href="/api-reference/endpoint/delete"
-  >
-    Remove leads from your workspace
-  </Card>
-  
-  <Card
-    title="Webhooks"
-    icon="webhook"
-    href="/api-reference/endpoint/webhook"
-  >
-    Configure event notifications
-  </Card>
-</CardGroup>
-
----
-
-## Code Examples
-
-### JavaScript (Node.js)
-
-```javascript
-const axios = require('axios');
-
-const tucoApi = axios.create({
-  baseURL: 'https://api.tuco.ai/v1',
-  headers: {
-    'Authorization': 'Bearer YOUR_CLERK_TOKEN',
-    'Content-Type': 'application/json'
-  }
-});
-
-// Create a lead
-async function createLead() {
-  try {
-    const response = await tucoApi.post('/leads', {
-      leads: [{
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane@example.com',
-        phone: '+12025551234'
-      }],
-      listId: '507f1f77bcf86cd799439011'
-    });
-    console.log('Lead created:', response.data);
-  } catch (error) {
-    console.error('Error:', error.response.data);
-  }
-}
-```
-
-### Python
-
-```python
-import requests
-
-BASE_URL = 'https://api.tuco.ai/v1'
-HEADERS = {
-    'Authorization': 'Bearer YOUR_CLERK_TOKEN',
-    'Content-Type': 'application/json'
-}
-
-# Create a lead
-def create_lead():
-    payload = {
-        'leads': [{
-            'firstName': 'Jane',
-            'lastName': 'Smith',
-            'email': 'jane@example.com',
-            'phone': '+12025551234'
-        }],
-        'listId': '507f1f77bcf86cd799439011'
-    }
-    
-    response = requests.post(
-        f'{BASE_URL}/leads',
-        headers=HEADERS,
-        json=payload
-    )
-    
-    if response.status_code == 200:
-        print('Lead created:', response.json())
-    else:
-        print('Error:', response.json())
-```
-
-### cURL
-
-```bash
-curl -X POST https://api.tuco.ai/v1/leads \
-  -H "Authorization: Bearer YOUR_CLERK_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "leads": [{
-      "firstName": "Jane",
-      "lastName": "Smith",
-      "email": "jane@example.com",
-      "phone": "+12025551234"
-    }],
-    "listId": "507f1f77bcf86cd799439011"
-  }'
-```
-
----
-
-## Support
-
-Need help with the API?
-
-<CardGroup cols={2}>
-  <Card
-    title="Email Support"
-    icon="envelope"
-    href="mailto:support@tuco.ai"
-  >
-    Get help from our engineering team
-  </Card>
-  
-  <Card
-    title="Community"
-    icon="discord"
-    href="https://discord.gg/tuco"
-  >
-    Join our developer community
-  </Card>
-</CardGroup>

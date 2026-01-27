@@ -1,0 +1,54 @@
+---
+title: "Architecture Overview"
+description: "How Tuco AI is structured from a customer’s point of view"
+icon: "diagram-project"
+---
+
+## How Tuco AI Is Organized
+
+Tuco AI is organized around a few clear areas you interact with:
+
+- The main app, where you manage leads, lines, campaigns, and settings.
+- The delivery engine, which turns what you configure into real messages.
+- Integrations and APIs, which let your existing tools work with Tuco data.
+
+From your perspective, these pieces act as one product: changes you make in the app flow through to sending, reporting, and integrations without extra setup.
+
+---
+
+## What This Means for Your Team
+
+Because the product is structured this way:
+
+- Updates you make in Tuco (like changing a campaign or a line) are reflected consistently wherever they matter.
+- Your CRM or internal tools can safely read from and write to Tuco using the documented APIs.
+- Everyone on your team sees the same truth in the Tuco UI, exports, and connected systems.
+
+The system automatically handles how these parts talk to each other; you only decide what you want to run and where data should show up.
+
+---
+
+## Reliability & Isolation
+
+Tuco AI is designed so that:
+
+- Workspaces are clearly separated, and one customer’s activity does not interfere with another’s.
+- Issues in connected tools or channels do not silently change your data in Tuco.
+- When something cannot be sent or synchronized, you see clear statuses and messages rather than silent failures.
+
+Data is preserved safely, and you stay in control of when to retry, change configuration, or pause activity.
+
+---
+
+## How Integrations Fit In
+
+Integrations such as CRM plugins and custom backends connect to Tuco using the same public APIs and webhooks you see in the docs.
+
+This gives you:
+
+- Predictable data shapes between Tuco and your systems.
+- A single place (your Tuco workspace) to manage what is allowed to connect.
+- Confidence that turning an integration on or off has obvious, visible effects.
+
+No action is required from you to understand internal components; the only surfaces you need are the app, the APIs, and the webhooks you explicitly configure.
+
