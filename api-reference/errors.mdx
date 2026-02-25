@@ -1,53 +1,175 @@
 ---
-title: "Errors & Outcomes"
-description: "How Tuco AI surfaces API errors and what they mean for you"
+title: "Errors & Status Codes"
+description: "HTTP status codes, error formats, and what to do when things go wrong"
 icon: "circle-exclamation"
 ---
 
-## How Errors Are Shown
+## Error format
 
-When something goes wrong with an API request, Tuco AI:
+All error responses return a JSON body with an `error` field. Some include
+a machine-readable `code` for programmatic handling.
 
-- Returns a clear HTTP status code.
-- Provides a short, readable message explaining what happened.
-
-Nothing changes silently. If a request is rejected, the underlying data in your workspace remains exactly as it was before the call.
-
----
-
-## Common Status Codes
-
-You can expect these high‑level meanings:
-
-- **2xx** – The request was accepted and the change is reflected in your workspace.
-- **4xx** – The request was not accepted because of something about the call (such as missing data or access).
-- **5xx** – The request did not complete due to a temporary problem on the service side.
-
-Data is preserved safely, and you stay in control of when you retry or adjust any failed request.
+```json
+{
+  "error": "Human-readable description of the problem",
+  "code": "MACHINE_READABLE_CODE"
+}
+```
 
 ---
 
-## Typical API Errors
+## HTTP status codes
 
-Some outcomes you may see:
-
-- **Invalid request**: Required information is missing or formatted in a way Tuco cannot accept. The response tells you which part needs attention.
-- **Authentication or access issue**: The credentials used do not match an allowed workspace or do not have permission for the requested data.
-- **Not found**: The item you referenced (such as a lead or line) does not exist in the workspace that made the request.
-- **Usage or billing issue**: The workspace has reached a state where changes are temporarily blocked, and write operations are declined until resolved in the Tuco UI.
-
-In all of these cases, Tuco clearly signals that the requested change did not go through.
+| Code | Meaning |
+|------|---------|
+| **200** | Request succeeded |
+| **201** | Resource created (e.g. message, lead) |
+| **400** | Validation error — check the `error` field for details |
+| **401** | Authentication failed — invalid or missing API key |
+| **402** | Workspace is read-only (e.g. subscription past due) |
+| **404** | Resource not found (e.g. lead, line, campaign) |
+| **429** | Rate limit exceeded — wait and retry |
+| **500** | Internal server error — retry or contact support |
 
 ---
 
-## Rate & Usage Limits
+## Send Message errors (`POST /api/messages`)
 
-Tuco AI applies safeguards so that the API remains stable for everyone.
+These are the specific errors you may encounter when sending a message.
 
-When you reach a documented limit:
+<Note>
+Pre-send checks like line limits, time windows, device gaps, and contact gaps
+**never** return errors. The message is accepted with `201` and the `status`
+field indicates the outcome (`pending`, `scheduled`, etc.).
+</Note>
 
-- You receive an explicit error explaining that a limit has been reached.
-- No unexpected partial changes are made to your data.
+<AccordionGroup>
+  <Accordion title="400 — Missing required field: message">
+    The `message` body field is required and was not provided.
 
-The system automatically handles internal protections; no special configuration is required from you beyond observing the limits published in your plan and product updates.
+    ```json
+    { "error": "Missing required field: message" }
+    ```
 
+    **Fix:** Include a non-empty `message` string in your request body.
+  </Accordion>
+
+  <Accordion title="400 — Invalid messageType">
+    The `messageType` value is not one of the accepted values.
+
+    ```json
+    { "error": "Invalid messageType. Must be email, sms, or imessage" }
+    ```
+
+    **Fix:** Use `"imessage"`, `"sms"`, or `"email"`. Or omit it entirely to
+    default to `"imessage"`.
+  </Accordion>
+
+  <Accordion title="400 — No active lines in workspace">
+    No `fromLineId` was provided and the workspace has no active lines to
+    round-robin from.
+
+    ```json
+    { "error": "No active lines in workspace..." }
+    ```
+
+    **Fix:** Provision at least one line in your workspace, or pass `fromLineId`
+    explicitly.
+  </Accordion>
+
+  <Accordion title="400 — Missing recipient">
+    No `recipientPhone`, `recipientEmail`, or `leadId` was provided, and the
+    resolved lead (if any) has no contact details.
+
+    ```json
+    { "error": "Either recipientEmail or recipientPhone is required..." }
+    ```
+
+    **Fix:** Provide at least one of `recipientPhone`, `recipientEmail`, or a
+    `leadId` that has stored contact details.
+  </Accordion>
+
+  <Accordion title="400 — Fallback not configured">
+    `sendFallbackSmsOnFailed` was set to `true` but the workspace doesn't have
+    Twilio fallback configured.
+
+    ```json
+    { "error": "...", "code": "FALLBACK_NOT_CONFIGURED" }
+    ```
+
+    **Fix:** Configure Twilio on your workspace via
+    `PATCH /api/workspace/fallback-config`, or set `sendFallbackSmsOnFailed`
+    to `false`.
+  </Accordion>
+
+  <Accordion title="401 — Unauthorized">
+    The API key is missing, invalid, or expired.
+
+    ```json
+    { "error": "Unauthorized" }
+    ```
+
+    **Fix:** Check your `Authorization: Bearer <key>` header. Generate a new
+    key from your workspace settings if needed.
+  </Accordion>
+
+  <Accordion title="402 — READ_ONLY (subscription past due)">
+    The workspace subscription is past due and write operations are blocked.
+
+    ```json
+    { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" }
+    ```
+
+    **Fix:** Update your billing in the Tuco dashboard.
+  </Accordion>
+
+  <Accordion title="404 — Lead not found">
+    A `leadId` was provided but no matching lead exists in the workspace.
+
+    ```json
+    { "error": "Lead not found or access denied" }
+    ```
+
+    **Fix:** Verify the `leadId` exists and belongs to the same workspace as
+    the API key.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Status vs error — key distinction
+
+<Warning>
+A `201` response with `status: "pending"` or `status: "scheduled"` is **not**
+an error. It means the message was accepted and Tuco will send it when
+conditions are met (time window, line limits, device gap, etc.).
+
+Only `4xx` and `5xx` responses indicate actual errors.
+</Warning>
+
+| You received | What it means | Action |
+|-------------|---------------|--------|
+| `201` + `"pending"` | Message accepted, sending soon | No action needed |
+| `201` + `"scheduled"` | Message accepted, will send at scheduled time | No action needed |
+| `201` + `"sent"` | Message sent immediately | No action needed |
+| `201` + `"fallback"` | Recipient has no iMessage, fallback may fire | Optional: send via another channel |
+| `400` | Validation error | Fix the request and retry |
+| `401` | Auth error | Check API key |
+| `402` | Billing issue | Update payment |
+| `404` | Resource not found | Check IDs |
+
+---
+
+## Rate limits
+
+Tuco applies per-workspace rate limits to protect the platform. When you hit
+a limit:
+
+- You receive a `429` response.
+- The `Retry-After` header (when present) tells you how long to wait.
+- No data is modified.
+
+<Tip>
+For high-volume sends, use campaigns instead of individual API calls. Campaigns
+handle pacing, line rotation, and retry logic automatically.
+</Tip>

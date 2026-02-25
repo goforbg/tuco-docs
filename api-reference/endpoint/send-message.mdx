@@ -1,75 +1,395 @@
 ---
-title: "Send Message Endpoint"
+title: "Send Message"
 api: "POST /api/messages"
-description: "Send a single iMessage, SMS, or email from a Tuco line"
+description: "Send an iMessage, SMS, or email to a contact — the core automation endpoint"
 ---
 
-## Endpoint
+<Note>
+This is the primary endpoint for automation tools like **GetSales**, **n8n**, **Make**, or your own backend.
+One call = one message. Tuco handles retries, delivery verification, and fallback internally.
+</Note>
 
-- **Method**: `POST`  
-- **Path**: `/api/messages`
+## Authentication
 
-This endpoint sends one message from a specific Tuco line to a single recipient.
+Pass your workspace API key as a Bearer token, or use a Clerk session token.
 
----
-
-## Request Body
-
-```json
-{
-  "message": "Hello from Tuco 👋",
-  "messageType": "imessage",
-  "fromLineId": "507f1f77bcf86cd799439011",
-  "recipientPhone": "+12025551234",
-  "recipientName": "Jane Doe",
-  "scheduledDate": "2025-10-15T14:30:00Z",
-  "batchId": "welcome-campaign-2025-10-15"
-}
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 ```
 
-**Required fields**
+---
 
-- `message` – text content to send.  
-- `messageType` – one of:
-  - `"imessage"`
-  - `"sms"`
-  - `"email"`  
-- `fromLineId` – ID of the Tuco line that should send the message.  
-- Either:
-  - `recipientPhone` **or** `recipientEmail`, or  
-  - `leadId` (to send to an existing lead using their stored contact details).
+## Request body
 
-**Optional fields**
+<ParamField body="message" type="string" required>
+  The text content to send. Supports plain text. Personalization placeholders
+  like `{{firstName}}` are resolved from the lead at send time.
+</ParamField>
 
-- `recipientName` – friendly name for the recipient.  
-- `scheduledDate` – ISO‑8601 timestamp to schedule the send in the future.  
-- `batchId` – free‑form string to group related messages (for reporting).  
-- Time‑window settings (optional, to mirror campaign rules):
-  - `timezone` – IANA timezone (for example, `"America/New_York"`).  
-  - `sendWindowStart` / `sendWindowEnd` – e.g. `"09:00"` and `"17:00"`.  
-  - `allowedDaysOfWeek` – array of day indexes or names (e.g. `[1,2,3,4,5]` for weekdays).
+<ParamField body="recipientPhone" type="string">
+  Phone number in E.164 format (e.g. `"+12025551234"`).
+  Required unless `recipientEmail` or `leadId` is provided.
+</ParamField>
+
+<ParamField body="recipientEmail" type="string">
+  Email address for email or iMessage (Apple ID).
+  Required unless `recipientPhone` or `leadId` is provided.
+</ParamField>
+
+<ParamField body="messageType" type="string" default="imessage">
+  Channel to use. When omitted, defaults to `"imessage"`.
+
+  | Value | Channel | Addresses tried (from lead) |
+  |-------|---------|----------------------------|
+  | `"imessage"` | iMessage via BlueBubbles | phone → altPhone1-3 → email → altEmail1-3 |
+  | `"sms"` | SMS via Twilio | phone → altPhone1-3 only |
+  | `"email"` | Email | email → altEmail1-3 only |
+</ParamField>
+
+<ParamField body="fromLineId" type="string">
+  Tuco line ID to send from. **Optional** — when omitted, Tuco round-robins
+  across your workspace's active lines automatically.
+</ParamField>
+
+<ParamField body="leadId" type="string">
+  Send to an existing lead using their stored contact details. When provided
+  together with `recipientPhone`/`recipientEmail`, the body recipient is used
+  as the send-to address while the lead is used for linking.
+</ParamField>
+
+<ParamField body="recipientName" type="string">
+  Display name for the recipient. Derived from the lead when omitted.
+</ParamField>
+
+<Accordion title="Alternate contact fields">
+  Stored on the lead (created or found). The worker tries these in priority
+  order when the primary address fails iMessage availability.
+
+  <ParamField body="altPhone1" type="string">Alternate phone number 1</ParamField>
+  <ParamField body="altPhone2" type="string">Alternate phone number 2</ParamField>
+  <ParamField body="altPhone3" type="string">Alternate phone number 3</ParamField>
+  <ParamField body="altEmail1" type="string">Alternate email 1</ParamField>
+  <ParamField body="altEmail2" type="string">Alternate email 2</ParamField>
+  <ParamField body="altEmail3" type="string">Alternate email 3</ParamField>
+</Accordion>
+
+<Accordion title="Scheduling & time window">
+  Control **when** the message is sent. All fields are optional.
+  When omitted, the message sends immediately (subject to line limits and device gaps).
+
+  <ParamField body="scheduledDate" type="string">
+    ISO 8601 timestamp to send in the future (e.g. `"2025-10-15T14:30:00Z"`).
+  </ParamField>
+  <ParamField body="timezone" type="string">
+    IANA timezone for the send window (e.g. `"America/New_York"`). Required
+    if using `sendWindowStart`/`sendWindowEnd`.
+  </ParamField>
+  <ParamField body="sendWindowStart" type="string">
+    Earliest time to send, `HH:mm` format (e.g. `"09:00"`).
+  </ParamField>
+  <ParamField body="sendWindowEnd" type="string">
+    Latest time to send, `HH:mm` format (e.g. `"17:00"`).
+  </ParamField>
+  <ParamField body="allowedDaysOfWeek" type="number[]">
+    Days when sending is allowed. `0` = Sunday, `6` = Saturday.
+    Example: `[1,2,3,4,5]` for weekdays only.
+  </ParamField>
+</Accordion>
+
+<Accordion title="Fallback & advanced">
+  <ParamField body="sendFallbackSmsOnFailed" type="boolean" default="false">
+    When `true`, if the message ends in `failed` status (technical error after
+    retries), Tuco sends a fallback SMS via your configured Twilio number.
+    Returns `400` with `code: "FALLBACK_NOT_CONFIGURED"` if enabled but no
+    fallback is set up on your workspace.
+  </ParamField>
+  <ParamField body="batchId" type="string">
+    Free-form string to group related messages for reporting.
+  </ParamField>
+</Accordion>
+
+---
+
+## Examples
+
+<CodeGroup>
+
+```bash Minimal (defaults to iMessage)
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Hi, this is a test from Tuco.",
+    "recipientPhone": "+12025551234"
+  }'
+```
+
+```bash With alt contacts + time window
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Hey {{firstName}}, quick question about next week.",
+    "recipientPhone": "+12025551234",
+    "altPhone1": "+12025559876",
+    "altEmail1": "prospect@icloud.com",
+    "timezone": "America/New_York",
+    "sendWindowStart": "09:00",
+    "sendWindowEnd": "17:00",
+    "allowedDaysOfWeek": [1, 2, 3, 4, 5]
+  }'
+```
+
+```bash Send to existing lead
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Following up on our conversation.",
+    "leadId": "667f1f77bcf86cd799439012"
+  }'
+```
+
+```bash Scheduled + fallback SMS on failure
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Reminder: your appointment is tomorrow at 2pm.",
+    "recipientPhone": "+12025551234",
+    "scheduledDate": "2025-10-15T14:30:00Z",
+    "sendFallbackSmsOnFailed": true
+  }'
+```
+
+```python Python (requests)
+import requests
+
+resp = requests.post(
+    "https://app.tuco.ai/api/messages",
+    headers={"Authorization": "Bearer tuco_sk_xxxxxxxxxxxxx"},
+    json={
+        "message": "Hi, this is a test from Tuco.",
+        "recipientPhone": "+12025551234",
+    },
+)
+print(resp.status_code, resp.json())
+```
+
+```javascript Node.js (fetch)
+const resp = await fetch("https://app.tuco.ai/api/messages", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer tuco_sk_xxxxxxxxxxxxx",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    message: "Hi, this is a test from Tuco.",
+    recipientPhone: "+12025551234",
+  }),
+});
+console.log(resp.status, await resp.json());
+```
+
+</CodeGroup>
 
 ---
 
 ## Response
 
-**Success (`201 Created`)**
+The API always returns **`201`** when the message is successfully created.
+The `status` field tells you what happens next.
+
+<Tip>
+**Pre-send checks are never errors.** Line limits, time windows, device gaps,
+and contact gaps cause `status: "pending"` or `"scheduled"` — the message is
+accepted and will send when conditions are met.
+</Tip>
+
+### Success (`201 Created`)
 
 ```json
 {
   "success": true,
+  "status": "pending",
   "message": {
-    "_id": "507f1f77bcf86cd799439012",
-    "message": "Hello from Tuco 👋",
+    "_id": "690d1c95984d3cdcac76e9ff",
+    "message": "Hi, this is a test from Tuco.",
     "messageType": "imessage",
-    "status": "queued",
-    "fromLineId": "507f1f77bcf86cd799439011",
+    "status": "pending",
+    "fromLineId": "667f1f77bcf86cd799439011",
     "recipientPhone": "+12025551234",
-    "recipientName": "Jane Doe",
-    "createdAt": "2025-10-15T14:30:00.000Z"
+    "workspaceId": "org_123",
+    "createdAt": "2025-10-15T14:30:00.000Z",
+    "updatedAt": "2025-10-15T14:30:00.000Z"
   }
 }
 ```
 
-If required fields are missing or invalid you receive a `400` with a clear error message. If the workspace is in read‑only mode (for example, due to billing) you receive a `402` with `code: "READ_ONLY"`. Authentication failures return `401`.
+<ResponseField name="success" type="boolean">
+  `true` when the message was created.
+</ResponseField>
 
+<ResponseField name="status" type="string">
+  Current status of the message. See the status table below.
+</ResponseField>
+
+<ResponseField name="message" type="object">
+  The full message document. Key fields:
+
+  <Expandable title="Message fields">
+    <ResponseField name="_id" type="string">Unique message ID</ResponseField>
+    <ResponseField name="message" type="string">Body text</ResponseField>
+    <ResponseField name="messageType" type="string">Channel (`imessage`, `sms`, `email`)</ResponseField>
+    <ResponseField name="status" type="string">Lifecycle status</ResponseField>
+    <ResponseField name="fromLineId" type="string">Line used to send</ResponseField>
+    <ResponseField name="recipientPhone" type="string">Recipient phone</ResponseField>
+    <ResponseField name="recipientEmail" type="string">Recipient email</ResponseField>
+    <ResponseField name="leadId" type="string">Linked lead ID</ResponseField>
+    <ResponseField name="scheduledDate" type="string">When the message will send (if scheduled)</ResponseField>
+    <ResponseField name="sentAt" type="string">When actually sent</ResponseField>
+    <ResponseField name="deliveredAt" type="string">When delivery confirmed</ResponseField>
+    <ResponseField name="createdAt" type="string">Creation timestamp</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Status values
+
+| Status | Meaning | Is it an error? |
+|--------|---------|-----------------|
+| `"sent"` | Message sent immediately (sync path) | No |
+| `"pending"` | Created, worker will process. Line limits / time window / device gap may delay it. | **No** — it will send when checks pass |
+| `"scheduled"` | Will send at `scheduledDate`, or rescheduled due to device gap | **No** |
+| `"fallback"` | Recipient has no iMessage; fallback SMS sent if configured | **No** (business rule) |
+| `"failed"` | All retries exhausted or availability API error | Yes (technical) |
+
+<Info>
+`"pending"` and `"scheduled"` mean the message is accepted and queued. The worker sends it when:
+- **Time window** is satisfied (inside `sendWindowStart`–`sendWindowEnd`)
+- **Allowed day** is satisfied (today is in `allowedDaysOfWeek`)
+- **Line limits** reset (daily total or new conversations limit)
+- **Device gap** is met (min time between sends from same device)
+- **Contact gap** is met (min time between first messages to different contacts)
+
+None of these cause an error response.
+</Info>
+
+---
+
+## Errors
+
+Errors are returned only for **validation failures** — never for pre-send checks.
+
+| Status | When | Example |
+|--------|------|---------|
+| `400` | Missing `message` | `{ "error": "Missing required field: message" }` |
+| `400` | Invalid `messageType` | `{ "error": "Invalid messageType. Must be email, sms, or imessage" }` |
+| `400` | No active lines + no `fromLineId` | `{ "error": "No active lines in workspace..." }` |
+| `400` | No recipient anywhere | `{ "error": "Either recipientEmail or recipientPhone is required..." }` |
+| `400` | `sendFallbackSmsOnFailed: true` but fallback not configured | `{ "error": "...", "code": "FALLBACK_NOT_CONFIGURED" }` |
+| `401` | Invalid or missing API key | `{ "error": "Unauthorized" }` |
+| `402` | Subscription past due (workspace read-only) | `{ "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" }` |
+| `404` | `leadId` provided but not found | `{ "error": "Lead not found or access denied" }` |
+
+---
+
+## What happens after the API call
+
+<Steps>
+  <Step title="Message created">
+    Tuco inserts a record in the `messages` collection with status `pending`
+    (or `scheduled` if `scheduledDate` is provided).
+  </Step>
+  <Step title="Pre-send checks (worker)">
+    The worker checks line limits, time window, device gap, and contact gap.
+    If any fail, the message stays **queued** and is retried later — not failed.
+  </Step>
+  <Step title="Availability check">
+    If the workspace has a line with Private API, Tuco checks whether the
+    recipient supports iMessage. If not → status becomes `fallback` and
+    fallback SMS fires (when configured).
+  </Step>
+  <Step title="Send">
+    For individual messages: up to **5 send attempts** with delivery
+    verification between each (polling for up to 90 seconds). For campaigns:
+    1 attempt per line.
+  </Step>
+  <Step title="Outcome">
+    `sent` → appears in Unibox + webhook fires.
+    `failed` → error recorded + optional fallback SMS.
+    `delivered` → confirmed later via device callbacks.
+  </Step>
+</Steps>
+
+---
+
+## Lead resolution
+
+When you send without a `leadId`, Tuco resolves the recipient automatically:
+
+<AccordionGroup>
+  <Accordion title="Lead found by phone/email">
+    If an existing lead in your workspace matches the `recipientPhone` or
+    `recipientEmail`, the message is linked to that lead. Any `altPhone`/`altEmail`
+    fields you pass will **update** the lead (merge, not overwrite).
+  </Accordion>
+  <Accordion title="New lead created (Quick Sends)">
+    If no matching lead exists, Tuco creates one under a list called **"Quick Sends"**
+    (created automatically if it doesn't exist). Alt contact fields are stored on
+    the new lead.
+  </Accordion>
+  <Accordion title="leadId provided">
+    The lead must exist in your workspace. The message is linked to it.
+    `recipientPhone`/`recipientEmail` from the body override the lead's stored
+    contact for this specific send.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Alt contact fields
+
+When you pass `altPhone1`–`altPhone3` or `altEmail1`–`altEmail3`, they are
+stored on the **lead** (not the message). The worker uses them as fallback
+addresses when the primary address fails the iMessage availability check.
+
+**Priority order for `messageType: "imessage"`:**
+
+```
+phone → altPhone1 → altPhone2 → altPhone3 → email → altEmail1 → altEmail2 → altEmail3
+```
+
+<Warning>
+Alt fields are **merged** onto the lead. If a lead already has `altPhone1` set
+and you send a new message without `altPhone1`, the existing value is preserved.
+Only explicitly provided fields are overwritten.
+</Warning>
+
+---
+
+## Fallback SMS on failure
+
+By default, when a message fails (technical error), no SMS fallback is sent.
+
+To enable:
+
+1. Configure Twilio on your workspace (`GET /api/workspace/fallback-config`).
+2. Set `sendFallbackSmsOnFailed: true` in the request body (per-message) or
+   on the workspace (applies to all messages).
+
+<Warning>
+If you set `sendFallbackSmsOnFailed: true` but fallback is **not** configured,
+the API returns **400** with `code: "FALLBACK_NOT_CONFIGURED"`.
+</Warning>
+
+| Scenario | Fallback SMS fires? |
+|----------|---------------------|
+| Status = `fallback` (no iMessage), Twilio configured | **Yes** — always |
+| Status = `failed`, `sendFallbackSmsOnFailed: true`, Twilio configured | **Yes** |
+| Status = `failed`, `sendFallbackSmsOnFailed: false` (default) | **No** |
+| Status = `failed`, flag is `true` but no Twilio | **400 error at API call time** |
+
+<Note>
+Fallback SMS requires `recipientPhone` on the message. Email-only messages
+will not trigger fallback SMS.
+</Note>

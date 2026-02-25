@@ -1,16 +1,18 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
-    "license": {
-      "name": "MIT"
-    },
-    "version": "1.0.0"
+    "title": "Tuco AI API",
+    "description": "Send iMessages, SMS, and email at scale via the Tuco messaging platform",
+    "version": "1.0.0",
+    "contact": {
+      "email": "support@tuco.ai",
+      "url": "https://app.tuco.ai"
+    }
   },
   "servers": [
     {
-      "url": "https://app.tuco.ai"
+      "url": "https://app.tuco.ai",
+      "description": "Production"
     }
   ],
   "security": [
@@ -19,198 +21,306 @@
     }
   ],
   "paths": {
-    "/plants": {
-      "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
+    "/api/messages": {
+      "post": {
+        "operationId": "sendMessage",
+        "summary": "Send a message",
+        "description": "Send an iMessage, SMS, or email to a recipient. Tuco handles retries, delivery verification, and fallback internally.",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              },
+              "examples": {
+                "minimal": {
+                  "summary": "Minimal (defaults to iMessage)",
+                  "value": {
+                    "message": "Hi, this is a test from Tuco.",
+                    "recipientPhone": "+12025551234"
+                  }
+                },
+                "withAltContacts": {
+                  "summary": "With alt contacts + time window",
+                  "value": {
+                    "message": "Hey, quick question about next week.",
+                    "recipientPhone": "+12025551234",
+                    "altPhone1": "+12025559876",
+                    "altEmail1": "prospect@icloud.com",
+                    "timezone": "America/New_York",
+                    "sendWindowStart": "09:00",
+                    "sendWindowEnd": "17:00",
+                    "allowedDaysOfWeek": [1, 2, 3, 4, 5]
+                  }
+                },
+                "existingLead": {
+                  "summary": "Send to existing lead",
+                  "value": {
+                    "message": "Following up on our conversation.",
+                    "leadId": "667f1f77bcf86cd799439012"
+                  }
+                },
+                "scheduledWithFallback": {
+                  "summary": "Scheduled + fallback SMS on failure",
+                  "value": {
+                    "message": "Reminder: your appointment is tomorrow at 2pm.",
+                    "recipientPhone": "+12025551234",
+                    "scheduledDate": "2025-10-15T14:30:00Z",
+                    "sendFallbackSmsOnFailed": true
+                  }
+                }
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
-            "description": "Plant response",
+          "201": {
+            "description": "Message created successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                },
+                "example": {
+                  "success": true,
+                  "status": "pending",
+                  "message": {
+                    "_id": "690d1c95984d3cdcac76e9ff",
+                    "message": "Hi, this is a test from Tuco.",
+                    "messageType": "imessage",
+                    "status": "pending",
+                    "fromLineId": "667f1f77bcf86cd799439011",
+                    "recipientPhone": "+12025551234",
+                    "workspaceId": "org_123",
+                    "createdAt": "2025-10-15T14:30:00.000Z",
+                    "updatedAt": "2025-10-15T14:30:00.000Z"
                   }
                 }
               }
             }
           },
           "400": {
-            "description": "Unexpected error",
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "plant response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Plant"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missingMessage": {
+                    "summary": "Missing required field",
+                    "value": {
+                      "error": "Missing required field: message"
+                    }
+                  },
+                  "invalidMessageType": {
+                    "summary": "Invalid messageType",
+                    "value": {
+                      "error": "Invalid messageType. Must be email, sms, or imessage"
+                    }
+                  },
+                  "fallbackNotConfigured": {
+                    "summary": "Fallback not configured",
+                    "value": {
+                      "error": "sendFallbackSmsOnFailed is enabled but workspace fallback SMS is not configured",
+                      "code": "FALLBACK_NOT_CONFIGURED"
+                    }
+                  }
                 }
               }
             }
           },
-          "400": {
-            "description": "unexpected error",
+          "401": {
+            "description": "Authentication failed",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Unauthorized"
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "ID of plant to delete",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
           },
-          "400": {
-            "description": "unexpected error",
+          "402": {
+            "description": "Workspace read-only (subscription past due)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "READ_ONLY",
+                  "code": "READ_ONLY",
+                  "reason": "past_due"
                 }
               }
             }
-          }
-        }
-      }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
-      "post": {
-        "description": "Information about a new plant added to the store",
-        "requestBody": {
-          "description": "Plant added to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+          },
+          "404": {
+            "description": "Lead not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Lead not found or access denied"
+                }
               }
             }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
           }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
-        "type": "object",
-        "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
-          },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
-          }
-        }
-      },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
-          },
-          {
-            "required": [
-              "id"
-            ],
-            "type": "object",
-            "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
-              }
-            }
-          }
-        ]
-      },
-      "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
-        "scheme": "bearer"
+        "scheme": "bearer",
+        "description": "Workspace API key (e.g. tuco_sk_xxxxxxxxxxxxx)"
+      }
+    },
+    "schemas": {
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Text content to send"
+          },
+          "messageType": {
+            "type": "string",
+            "enum": ["imessage", "sms", "email"],
+            "default": "imessage",
+            "description": "Channel to use (defaults to imessage)"
+          },
+          "recipientPhone": {
+            "type": "string",
+            "description": "Phone number in E.164 format"
+          },
+          "recipientEmail": {
+            "type": "string",
+            "description": "Email address"
+          },
+          "recipientName": {
+            "type": "string",
+            "description": "Display name for the recipient"
+          },
+          "fromLineId": {
+            "type": "string",
+            "description": "Line ID to send from (optional; round-robin when omitted)"
+          },
+          "leadId": {
+            "type": "string",
+            "description": "Existing lead ID to link and send to"
+          },
+          "altPhone1": { "type": "string", "description": "Alternate phone 1" },
+          "altPhone2": { "type": "string", "description": "Alternate phone 2" },
+          "altPhone3": { "type": "string", "description": "Alternate phone 3" },
+          "altEmail1": { "type": "string", "description": "Alternate email 1" },
+          "altEmail2": { "type": "string", "description": "Alternate email 2" },
+          "altEmail3": { "type": "string", "description": "Alternate email 3" },
+          "scheduledDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp for scheduled send"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone for send window (e.g. America/New_York)"
+          },
+          "sendWindowStart": {
+            "type": "string",
+            "description": "Earliest send time in HH:mm format"
+          },
+          "sendWindowEnd": {
+            "type": "string",
+            "description": "Latest send time in HH:mm format"
+          },
+          "allowedDaysOfWeek": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0, "maximum": 6 },
+            "description": "Days when sending is allowed (0=Sun, 6=Sat)"
+          },
+          "sendFallbackSmsOnFailed": {
+            "type": "boolean",
+            "default": false,
+            "description": "Send fallback SMS via Twilio if message fails (requires fallback config)"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Free-form grouping identifier"
+          }
+        }
+      },
+      "SendMessageResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "pending", "scheduled", "fallback", "failed"],
+            "description": "Current message status"
+          },
+          "message": {
+            "$ref": "#/components/schemas/Message"
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "message": { "type": "string" },
+          "messageType": { "type": "string", "enum": ["imessage", "sms", "email"] },
+          "status": {
+            "type": "string",
+            "enum": ["queued", "pending", "sending", "sent", "delivered", "failed", "fallback", "scheduled", "cancelled"]
+          },
+          "fromLineId": { "type": "string" },
+          "fromLinePhone": { "type": "string" },
+          "fromLineEmail": { "type": "string" },
+          "recipientPhone": { "type": "string" },
+          "recipientEmail": { "type": "string" },
+          "recipientName": { "type": "string" },
+          "leadId": { "type": "string" },
+          "workspaceId": { "type": "string" },
+          "createdByUserId": { "type": "string" },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "sentAt": { "type": "string", "format": "date-time" },
+          "deliveredAt": { "type": "string", "format": "date-time" },
+          "errorMessage": { "type": "string" },
+          "checkedAddresses": { "type": "array", "items": { "type": "string" } },
+          "sendFallbackSmsOnFailed": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code (when applicable)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Additional context (when applicable)"
+          }
+        },
+        "required": ["error"]
       }
     }
   }

@@ -1,151 +1,165 @@
 ---
-title: "Messages API"
-description: "How Tuco AI treats messages sent through the API"
+title: "Messages"
+description: "The message object, lifecycle, and how Tuco processes your sends"
 icon: "paper-plane"
 ---
 
-## What the Messages API Does
+## Overview
 
-The Messages API lets your systems send messages through the same Tuco engine used by the product UI.
+Every call to `POST /api/messages` creates a message document in Tuco. This
+page describes the shape of that document, the lifecycle it moves through, and
+how delivery works under the hood.
 
-When a request is accepted:
-
-- A message record is created in Tuco.
-- The message appears in the Tuco UI with a clear status.
-- The message can be included in reporting, exports, and audits.
-
-You stay in control of which recipients and which lines are used; the system automatically handles delivery behavior behind the scenes.
-
-Messages can be triggered for individual contacts or as part of the workflows you build around campaigns and automations.
+<Info>
+Messages sent via API appear in **Unibox** alongside manually sent and incoming
+messages. Same recipient = same thread.
+</Info>
 
 ---
 
-## Message Lifecycle You Can See
+## Message object
 
-From your perspective, each message moves through a small set of visible states, such as:
+<ResponseField name="_id" type="string">Unique message ID (MongoDB ObjectId)</ResponseField>
+<ResponseField name="message" type="string">Body text</ResponseField>
+<ResponseField name="messageType" type="string">
+  `"imessage"` | `"sms"` | `"email"`. Defaults to `"imessage"` when omitted from the API.
+</ResponseField>
+<ResponseField name="status" type="string">
+  Current lifecycle state. See [Status lifecycle](#status-lifecycle) below.
+</ResponseField>
+<ResponseField name="fromLineId" type="string">Line used to send</ResponseField>
+<ResponseField name="fromLinePhone" type="string">Denormalized phone from the line</ResponseField>
+<ResponseField name="fromLineEmail" type="string">Denormalized email from the line</ResponseField>
+<ResponseField name="recipientPhone" type="string">Recipient phone number</ResponseField>
+<ResponseField name="recipientEmail" type="string">Recipient email address</ResponseField>
+<ResponseField name="recipientName" type="string">Display name</ResponseField>
+<ResponseField name="leadId" type="string">Linked lead (if any)</ResponseField>
+<ResponseField name="workspaceId" type="string">Clerk organization ID</ResponseField>
+<ResponseField name="createdByUserId" type="string">Clerk user ID who created the message</ResponseField>
 
-- Waiting to be sent.
-- Successfully sent or delivered.
-- Not sent, with a clear reason.
+<Accordion title="Scheduling & settings fields">
+  <ResponseField name="scheduledDate" type="string">ISO 8601 timestamp — when to send</ResponseField>
+  <ResponseField name="batchId" type="string">Grouping identifier</ResponseField>
+  <ResponseField name="stepIndex" type="number">Campaign step index (0 = step 1)</ResponseField>
+  <ResponseField name="settings" type="object">
+    Time window settings:
+    <Expandable title="settings fields">
+      <ResponseField name="timezone" type="string">IANA timezone</ResponseField>
+      <ResponseField name="sendWindowStart" type="string">HH:mm</ResponseField>
+      <ResponseField name="sendWindowEnd" type="string">HH:mm</ResponseField>
+      <ResponseField name="allowedDaysOfWeek" type="number[]">0=Sun … 6=Sat</ResponseField>
+    </Expandable>
+  </ResponseField>
+</Accordion>
 
-You can rely on these states being reflected both in the API responses and in the Tuco dashboard, so your teams share the same view of what has happened.
+<Accordion title="Delivery tracking fields">
+  <ResponseField name="sentAt" type="string">When actually sent</ResponseField>
+  <ResponseField name="deliveredAt" type="string">When delivery confirmed via device callback</ResponseField>
+  <ResponseField name="readAt" type="string">When read (incoming messages only)</ResponseField>
+  <ResponseField name="externalMessageId" type="string">BlueBubbles / provider ID</ResponseField>
+</Accordion>
 
-You can also use these visible states in your own systems to decide when to move a contact forward in a journey or when to try a different channel.
+<Accordion title="Error & fallback fields">
+  <ResponseField name="errorMessage" type="string">Error details when `failed` or `fallback`</ResponseField>
+  <ResponseField name="checkedAddresses" type="string[]">Addresses checked for iMessage availability (on `fallback`)</ResponseField>
+  <ResponseField name="sendFallbackSmsOnFailed" type="boolean">
+    When `true` + message fails, Tuco sends fallback SMS if Twilio is configured.
+    Default: `false`.
+  </ResponseField>
+</Accordion>
+
+<Accordion title="Integration fields">
+  <ResponseField name="campaignId" type="string">Campaign reference</ResponseField>
+  <ResponseField name="hsContactId" type="string">HubSpot contact ID</ResponseField>
+  <ResponseField name="hsPortalId" type="string">HubSpot portal ID</ResponseField>
+  <ResponseField name="ghlContactId" type="string">GHL contact ID</ResponseField>
+  <ResponseField name="ghlLocationId" type="string">GHL location ID</ResponseField>
+  <ResponseField name="ghlConversationMessageId" type="string">GHL conversation message ID</ResponseField>
+</Accordion>
+
+<ResponseField name="createdAt" type="string">Creation timestamp</ResponseField>
+<ResponseField name="updatedAt" type="string">Last update timestamp</ResponseField>
 
 ---
 
-## Sending from Your Own Systems
+## Status lifecycle
 
-When you send through the API, you decide:
-
-- Which workspace owns the message.
-- Which line it should appear to come from.
-- Which recipient should receive it.
-
-Once Tuco confirms that a message request has been accepted, data is preserved safely and remains available for your own analytics and exports. No further action is required from you to keep that history intact.
-
-Tuco can use the contact information stored on a lead (including multiple emails and phone numbers where present) to determine how to address a given message. Depending on how your campaigns and payloads are configured, you can choose to focus on a primary contact method or to involve additional addresses where appropriate.
-
----
-
-## Personalization with Lead Fields
-
-Messages sent through the API can use simple placeholders such as first name and other basic lead fields for personalization.
-
-From your point of view:
-
-- You decide which fields to keep up to date on each lead.
-- Tuco applies those fields when rendering messages at send time.
-
-This keeps your content feeling personal while still being driven entirely by the lead data you already manage.
-
----
-
-## Notifications & Webhooks
-
-If you choose to connect webhooks for message events, your systems can receive simple notifications when key changes occur, such as deliveries or replies.
-
-Webhook details and advanced configurations are described in `/api-reference/message-webhooks`. These options are designed so that you can mirror what you already see in Tuco without needing to understand internal delivery logic.
-
-In particular, failure and fallback‑style events make it easy for you to trigger your own follow‑up flows, such as sending an SMS or WhatsApp message when a contact cannot be reached on the channel you originally chose.
-
----
-
-## Send iMessage to a Contact
-
-### Endpoint
-
-- **Method**: `POST`
-- **Path**: `/api/messages`
-- **Auth**: Tuco API key (server-side) or Clerk token
-
-### Required Fields
-
-- **`message`** (`string`) – body of the message.
-- **`messageType`** (`"imessage" | "sms" | "email"`) – use `"imessage"` for iMessage.
-- **`fromLineId`** (`string`) – ID of the line sending the message (from `/api/lines/by-user`).
-- One of:
-  - **`leadId`** (`string`) – send to an existing lead, using their stored contact details, **or**
-  - **`recipientPhone`** (`string`) and/or **`recipientEmail`** (`string`) – send directly to a raw contact.
-
-### Optional Fields
-
-- **`recipientName`** (`string`) – display name for the recipient (otherwise derived from the lead when possible).
-- **`scheduledDate`** (`string, ISO 8601`) – schedule for a future UTC time.
-- **`batchId`** (`string`) – arbitrary identifier to group related messages.
-- **Time window settings** (optional, align with campaigns):
-  - `timezone` (IANA string, e.g. `"America/New_York"`)
-  - `sendWindowStart` (`"HH:mm"`)
-  - `sendWindowEnd` (`"HH:mm"`)
-  - `allowedDaysOfWeek` (`number[] | string[]`)
-
-### Example: Send iMessage to an Existing Lead
-
-```bash
-POST /api/messages
-Authorization: Bearer tuco_xxx
-Content-Type: application/json
-
-{
-  "message": "Hey {{firstName}}, quick question about next week…",
-  "messageType": "imessage",
-  "fromLineId": "667f1f77bcf86cd799439011",
-  "leadId": "667f1f77bcf86cd799439012"
-}
+```
+queued → pending → sending → sent → delivered
+                               ↘ failed
+                               ↘ fallback
+                          ↗ scheduled (rescheduled)
+                     cancelled
 ```
 
-### Example: Send iMessage to a Raw Contact
+| Status | Meaning |
+|--------|---------|
+| **queued** | Not yet picked for send (waiting for line limits, time window, device gap, or contact gap) |
+| **pending** | Assigned to a line, worker is processing |
+| **sending** | Worker is actively sending (prevents duplicate sends) |
+| **sent** | Accepted by the provider (BlueBubbles / Twilio) |
+| **delivered** | Delivery confirmed via device callback (can come later) |
+| **failed** | Technical send failure after all retries, or availability API error |
+| **fallback** | Availability check determined recipient has no iMessage |
+| **scheduled** | Will send at `scheduledDate`, or rescheduled due to device gap |
+| **cancelled** | User or system cancelled |
 
-```bash
-POST /api/messages
-Authorization: Bearer tuco_xxx
-Content-Type: application/json
+<Tip>
+**`sent` vs `delivered`:** `sent` means the provider accepted the message.
+`delivered` means the recipient's device confirmed receipt — this can arrive
+seconds or minutes later via a device callback.
+</Tip>
 
-{
-  "message": "Hey John, this is a quick test from Tuco.",
-  "messageType": "imessage",
-  "fromLineId": "667f1f77bcf86cd799439011",
-  "recipientPhone": "+12025551234",
-  "recipientName": "John Doe"
-}
-```
+---
 
-### Success Response (201 Created)
+## Pre-send checks (why a message stays queued)
 
-```json
-{
-  "success": true,
-  "message": {
-    "_id": "690d1c95984d3cdcac76e9ff",
-    "message": "Hey John, this is a quick test from Tuco.",
-    "messageType": "imessage",
-    "status": "queued",
-    "fromLineId": "667f1f77bcf86cd799439011",
-    "leadId": "667f1f77bcf86cd799439012",
-    "createdAt": "2025-10-14T10:30:00Z"
-  }
-}
-```
+These checks run **before** a message is sent. None of them cause an API error —
+the message is accepted and waits.
 
-On errors you will receive a clear HTTP status and JSON body (for example `400` for validation issues, `401` for auth problems, or `402 READ_ONLY` when the workspace is temporarily read‑only).
+| Check | What it does | If it fails |
+|-------|--------------|-------------|
+| **Time window** | Only send inside `sendWindowStart`–`sendWindowEnd` on `allowedDaysOfWeek` | Stay **queued** until next valid time |
+| **Line limits** | Daily total messages / daily new conversations per line | Stay **queued** until limits reset |
+| **Device gap** | Minimum time between sends from the same physical device | **Queued** or **rescheduled** |
+| **Contact gap** | Minimum time between first messages to different contacts on the same line | Stay **queued** |
 
+<Note>
+You can check why a message is still queued by looking at your Loki/Grafana
+logs for events like `individual.message.validation_failed`,
+`message.queued_limit`, `individual.message.device_gap_not_met`,
+or `individual.message.gap_not_met`.
+</Note>
+
+---
+
+## Retries
+
+| Context | Send attempts | Verification between attempts | Gap | Env vars |
+|---------|---------------|-------------------------------|-----|----------|
+| **Individual** (API / Unibox) | **5** | `outgoing_messages` + BlueBubbles `message/query` (poll up to 90s) | 60s | `UNIBOX_REPLY_RETRY_*` |
+| **App sync fallback** | **3** | Same as individual | 30s | `SYNC_FALLBACK_RETRY_*` |
+| **Campaign** | **1** per line; step 0 tries other lines | — | — | — |
+
+<Info>
+The "app sync fallback" path only runs when the BullMQ queue is unreachable
+(e.g. Redis down). In normal operation, the worker handles all sends.
+</Info>
+
+---
+
+## Replying via API
+
+There is no special "reply" endpoint. To reply to a conversation, send another
+message to the **same recipient** using `POST /api/messages`. Unibox groups
+messages by recipient, so the new message appears in the existing thread.
+
+---
+
+## Where messages appear
+
+| Surface | What you see |
+|---------|-------------|
+| **Unibox** | Per-message status icon + label. All statuses except `queued`, `scheduled`, and `cancelled`. |
+| **Campaign detail** | Recipient-level status badges (Pending, Sent, Delivered, Failed, Fallback). |
+| **API** | `GET /api/messages` with filters by status, line, lead, etc. |
