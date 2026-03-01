@@ -10,7 +10,50 @@ icon: "bullhorn"
 - **Method**: `POST`  
 - **Path**: `/api/campaigns/{id}/leads`
 
-`{id}` is the campaign ID in Tuco.
+`{id}` is the campaign ID in Tuco. Copy the campaign ID from the campaign detail page in the app (copy button next to the ID).
+
+---
+
+## Quick start (copy-paste example)
+
+**Request (existing lead):**
+
+```http
+POST https://app.tuco.ai/api/campaigns/{campaignId}/leads
+Content-Type: application/json
+Authorization: Bearer <API_KEY>
+```
+
+```json
+{
+  "leadId": "507f1f77bcf86cd799439011"
+}
+```
+
+**Request (create new lead and add to campaign):**
+
+```json
+{
+  "lead": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "phone": "+14155551234",
+    "email": "jane@example.com"
+  }
+}
+```
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "leadId": "507f1f77bcf86cd799439011",
+  "campaignId": "507f1f77bcf86cd799439022",
+  "messageCount": 1,
+  "message": "Lead added to campaign and sequence started"
+}
+```
 
 ---
 
