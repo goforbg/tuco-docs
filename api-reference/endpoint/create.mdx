@@ -47,19 +47,31 @@ This endpoint is used both for creating a single lead and for bulk uploads (mult
 
 ## Response
 
+**Success** – status `201 Created` when at least one lead was created, or `200 OK` when the request succeeded but no new leads were inserted. Example:
+
 ```json
 {
   "message": "Leads saved successfully",
   "savedCount": 1,
   "duplicateCount": 0,
   "totalProcessed": 1,
-  "listId": "507f1f77bcf86cd799439011"
+  "listId": "507f1f77bcf86cd799439011",
+  "leadIds": ["674a1b2c3d4e5f678901234a"],
+  "leadListIds": ["507f1f77bcf86cd799439011"]
 }
 ```
 
+Response fields:
+
 - `savedCount` – number of new leads actually inserted.  
 - `duplicateCount` – leads skipped as duplicates within the same list (email/phone‑based).  
-- `totalProcessed` – total rows you attempted to upload.
+- `totalProcessed` – total rows you attempted to upload.  
+- `listId` – list the leads were added to.  
+- `leadIds` – array of Tuco lead IDs for **newly created** leads only, in the same order as inserted. Use these to link created leads back to your system or to fetch/update them later.  
+- `leadListIds` – array of list IDs the new leads were added to (one list per request; same as `listId` when adding to a single list).  
+- `duplicates` – present only when some (but not all) leads were duplicates; each entry describes the submitted input and the existing lead in the list.
 
-If validation fails you will receive a `400` with a readable error; if the workspace is temporarily read‑only you will receive a `402 READ_ONLY` error (see `/api-reference/errors`).
+**All duplicates** – status `409 Conflict`. No leads are created; the body includes `code: "DUPLICATE_LEADS"`, `duplicateCount`, and `duplicates` (each with `input` and `existingLead` including `_id`) so you can reconcile with existing records.
+
+**Other errors:** Validation failures return `400` with a readable error. If the requested list does not exist, you get `404`. If the workspace is temporarily read‑only (e.g. payment past due), you get `402` with `code: "READ_ONLY"`. See `/api-reference/errors` for more.
 
