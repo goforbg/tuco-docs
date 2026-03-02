@@ -2,10 +2,10 @@
 
 **ADHD short form:**
 - **GET /api/replies** → list who replied; optional `?campaignId=` filter; pagination `page`, `limit`; times in UTC.
-- **message.reply webhook** → fired when a reply is recorded; always has `repliedAtUtc`; `parentMessages` = last 2 we sent (campaign-scoped if in campaign, else workspace).
+- **message.reply webhook** → fired when a reply is recorded; always has `repliedAtUtc` and `parentMessages` (array; empty if none). Top-level backward-compat: `firstName`, `lastName`, `phone`, `listId`, `campaignId`, `fromLineId`, `recipientName`, `leadId`. `message` object matches GET /api/replies shape (`messageId`, `respondedAtUtc`, `messageSentAtUTC`, `parentMessages`, etc.).
 - **Campaign reply** → webhook has `campaignId` / `campaignName`; `parentMessages` = last 2 **campaign** messages to that lead.
 - **Individual reply** → reply to a one-off message; `parentMessages` = last 2 outbound to that lead (any); may have no `campaignId`.
-- **Inbound only (no original)** → reply with no matched original; we may still have `leadId`; `parentMessages` present only if we have outbound to that lead, else **omitted**.
+- **Inbound only (no original)** → reply with no matched original; we may still have `leadId`; `parentMessages` always present (array, possibly empty).
 
 ---
 
@@ -54,7 +54,7 @@ GET /api/replies?campaignId=674a1b2c3d4e5f6789&page=1&limit=20
 
 ## 2. Webhook: message.reply (campaign message)
 
-Reply matched to a **campaign** outbound. `parentMessages` = last 2 we sent in **that campaign** to that lead.
+Reply matched to a **campaign** outbound. `parentMessages` = last 2 we sent in **that campaign** to that lead (always present; array).
 
 ```json
 {
@@ -62,22 +62,36 @@ Reply matched to a **campaign** outbound. `parentMessages` = last 2 we sent in *
   "timestamp": "2025-03-02T15:00:05.000Z",
   "workspaceId": "org_2abc",
   "messageId": "674reply001",
+  "leadId": "667f1f77bcf86cd799439012",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "phone": "+12025551234",
+  "listId": "674list...",
+  "campaignId": "674a1b2c3d4e5f6789",
+  "campaignName": "Q1 Outreach",
+  "fromLineId": "699f704bc405fae6ca299a08",
+  "recipientName": "Jane Doe",
+  "repliedAtUtc": "2025-03-02T14:59:58.000Z",
+  "parentMessages": [
+    { "messageId": "674sent001", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674a1b2c_0", "stepIndex": 0 }
+  ],
   "message": {
+    "messageId": "674reply001",
+    "respondedAtUtc": "2025-03-02T14:59:58.000Z",
+    "messageSentAtUTC": "2025-03-02T14:59:58.000Z",
+    "parentMessages": [
+      { "messageId": "674sent001", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674a1b2c_0", "stepIndex": 0 }
+    ],
+    "recipientEmail": "jane@example.com",
+    "recipientPhone": null,
+    "name": "Jane Doe",
     "message": "Yes, I'm interested!",
     "direction": "received",
-    "recipientEmail": "jane@example.com",
     "leadId": "667f1f77bcf86cd799439012"
   },
   "originalMessageId": "674sent001",
   "originalMessage": { "message": "Hi Jane, we have an offer...", "batchId": "campaign_674a1b2c_0" },
-  "leadId": "667f1f77bcf86cd799439012",
-  "lead": { "firstName": "Jane", "lastName": "Doe", "email": "jane@example.com" },
-  "campaignId": "674a1b2c3d4e5f6789",
-  "campaignName": "Q1 Outreach",
-  "repliedAtUtc": "2025-03-02T14:59:58.000Z",
-  "parentMessages": [
-    { "messageId": "674sent001", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674a1b2c_0", "stepIndex": 0 }
-  ]
+  "lead": { "firstName": "Jane", "lastName": "Doe", "email": "jane@example.com" }
 }
 ```
 
@@ -113,9 +127,9 @@ Reply to a **one-off / non-campaign** message. `parentMessages` = last 2 outboun
 
 ---
 
-## 4. Webhook: message.reply (inbound only — no original, no parent messages)
+## 4. Webhook: message.reply (inbound only — no original)
 
-Reply with **no matched original** (inbound-only). We may still resolve `leadId`. If we have no outbound to that lead, **`parentMessages` is omitted**.
+Reply with **no matched original** (inbound-only). We may still resolve `leadId`. **`parentMessages` is always present** (array; empty if no outbound to that lead).
 
 ```json
 {
@@ -123,19 +137,28 @@ Reply with **no matched original** (inbound-only). We may still resolve `leadId`
   "timestamp": "2025-03-02T15:02:00.000Z",
   "workspaceId": "org_2abc",
   "messageId": "674reply003",
+  "leadId": "667f1f77bcf86cd799439014",
+  "firstName": "Alex",
+  "lastName": "Lee",
+  "fromLineId": "699f704bc405fae6ca299a08",
+  "recipientName": "Alex Lee",
+  "repliedAtUtc": "2025-03-02T15:01:58.000Z",
+  "parentMessages": [],
   "message": {
+    "messageId": "674reply003",
+    "respondedAtUtc": "2025-03-02T15:01:58.000Z",
+    "messageSentAtUTC": "2025-03-02T15:01:58.000Z",
+    "parentMessages": [],
+    "recipientPhone": "+12025559999",
+    "name": "Alex Lee",
     "message": "Hi, I want to learn more.",
     "direction": "received",
-    "recipientPhone": "+12025559999"
+    "leadId": "667f1f77bcf86cd799439014"
   },
   "originalMessageId": null,
   "originalMessage": null,
-  "leadId": "667f1f77bcf86cd799439014",
-  "lead": { "firstName": "Alex", "lastName": "Lee" },
-  "campaignId": null,
-  "campaignName": null,
-  "repliedAtUtc": "2025-03-02T15:01:58.000Z"
+  "lead": { "firstName": "Alex", "lastName": "Lee" }
 }
 ```
 
-No `parentMessages` key → no outbound to this lead yet (or we didn’t have a lead); `repliedAtUtc` is still always present.
+`parentMessages` is always an array (empty when no outbound); no outbound to this lead yet (or we didn’t have a lead); `repliedAtUtc` is still always present.

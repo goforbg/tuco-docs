@@ -42,20 +42,20 @@ Existing payload fields are unchanged. New fields are additive.
 | Consumer | Reads | `repliedAtUtc` | `parentMessages` | Still works? |
 |----------|--------|----------------|------------------|--------------|
 | Old (pre-change) | Only `event`, `messageId`, `message`, `originalMessageId`, `originalMessage`, `leadId`, `lead`, `campaignId`, `campaignName` | Ignores | Ignores | ✅ Yes |
-| New | Same + `repliedAtUtc` | Always present | Optional; treat as `T[] \| undefined` | ✅ Yes |
+| New | Same + flat fields + `repliedAtUtc` + `parentMessages` | Always present | Always present (array; may be empty) | ✅ Yes |
 
-- Old code never expected `repliedAtUtc` or `parentMessages`; extra keys in JSON are ignored, so behavior is unchanged.
-- New code: `repliedAtUtc` is always present; `parentMessages` may be absent, so check for presence/array length before use.
+- Old code: extra keys (firstName, lastName, phone, listId, fromLineId, recipientName, repliedAtUtc, parentMessages) are ignored; behavior unchanged.
+- New code: `repliedAtUtc` and `parentMessages` are always present; `message` object matches GET /api/replies shape (messageId, respondedAtUtc, messageSentAtUTC, parentMessages, etc.).
 
 ### 2.2 Call-site compatibility
 
 | Call site | Passes `extras`? | `repliedAtUtc` source | `parentMessages` source |
 |-----------|------------------|------------------------|--------------------------|
-| `processReplyWithOriginal` | Yes | `replyMessage.createdAt` → ISO | `getParentMessagesForReplyWebhook(..., campaign?._id)`; omit if length 0 |
-| `processReplyWithoutOriginal` | Yes | `replyMessage.createdAt` → ISO | `getParentMessagesForReplyWebhook(..., undefined)`; omit if length 0 |
-| Legacy (if 4-arg only) | No | Fallback in `fireMessageReplyWebhook`: `replyMessage.createdAt` → ISO | Not added (conditional spread) |
+| `processReplyWithOriginal` | Yes | `replyMessage.createdAt` → ISO | `getParentMessagesForReplyWebhook(...)`; always pass array (possibly empty) |
+| `processReplyWithoutOriginal` | Yes | `replyMessage.createdAt` → ISO | `getParentMessagesForReplyWebhook(...)`; always pass array (possibly empty) |
+| Legacy (if 4-arg only) | No | Fallback in `fireMessageReplyWebhook`: `replyMessage.createdAt` → ISO | `[]` (extras?.parentMessages ?? []) |
 
-So even when `extras` is not passed, `repliedAtUtc` is still set from the reply message; `parentMessages` is only set when explicitly provided and non-empty. Backward compatible at both consumer and call-site level.
+So `parentMessages` is always passed (array); `repliedAtUtc` is always set. Payload includes backward-compat top-level: firstName, lastName, phone, listId, fromLineId, recipientName, leadId; `message` object matches GET /api/replies.
 
 ---
 

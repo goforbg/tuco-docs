@@ -32,7 +32,9 @@ base fields; each event type adds its own specific fields.
 
 Sent when a new reply from a lead or contact is recorded. Use it to update your CRM, trigger automations, or log conversations.
 
-**Payload shape (backward compatible):** Existing fields are unchanged. New optional fields are additive so older integrations keep working.
+**Payload shape:** Top-level flat fields; **`data.reply`** is **identical** to one item in **GET /api/replies** (same keys, same types). Reply text is top-level **`message`** (string). **`parentMessages`** is always present (array; possibly empty).
+
+### Top-level fields
 
 | Field | Description |
 |-------|-------------|
@@ -40,21 +42,43 @@ Sent when a new reply from a lead or contact is recorded. Use it to update your 
 | `timestamp` | When the webhook was sent (ISO UTC) |
 | `workspaceId` | Workspace that owns the conversation |
 | `messageId` | ID of the **reply** message (the one they sent) |
-| `message` | Full reply message object (body, recipient, etc.) |
+| `leadId` | Lead ID when the reply is linked to a lead. Omitted if no lead could be matched. |
+| `firstName` | Lead first name (when lead is present). Backward-compat flat field. |
+| `lastName` | Lead last name (when lead is present). Backward-compat flat field. |
+| `phone` | Lead phone (when lead is present). Backward-compat flat field. |
+| `listId` | Lead list ID (when lead is present). Backward-compat flat field. |
+| `campaignId` | Campaign ID when the reply is tied to a campaign. |
+| `campaignName` | Campaign name when tied to a campaign. |
+| `fromLineId` | Line ID that received the reply. Backward-compat flat field. |
+| `recipientName` | Display name (lead name or recipient). Backward-compat flat field. |
+| `repliedAtUtc` | When the reply was received (UTC ISO 8601). **Always present.** |
+| `parentMessages` | Last 2 outbound messages you sent to this lead. **Always present** (array; empty if none). Same shape as GET /api/replies. |
+| `message` | **Reply text only** (string) — what they replied with. |
 | `originalMessageId` | ID of the message they replied to (when known) |
 | `originalMessage` | Original outbound message object (when known) |
-| `leadId` | Lead ID (when the reply is linked to a lead) |
-| `lead` | Full lead object (when known) |
-| `campaignId` / `campaignName` | Set when the reply is tied to a campaign |
-| **`repliedAtUtc`** | **(New)** When the reply was received, in UTC (ISO 8601). Always present. |
-| **`parentMessages`** | **(New)** Last 2 outbound messages you sent to this lead before the reply. Each has `messageId`, `message` (snippet), `sentAtUtc`, and optionally `batchId` / `stepIndex`. Omitted when there are none. |
+| `lead` | Full lead object when available. Omitted if no lead could be matched. |
 
-**When the reply is outside a campaign:**
+### `message` (reply text only)
 
-- **`repliedAtUtc`** — Always present. Every reply has a received-at time.
-- **`parentMessages`** — When the reply is not tied to a campaign, Tuco still includes the last 2 outbound messages you sent to that lead in the workspace (any channel). So you always get context about what you last sent them, even for one-off or non-campaign replies. When the reply is tied to a campaign, `parentMessages` is scoped to that campaign’s outbound messages.
+For `message.reply`, **`message`** is the **reply text only** (string) — what the lead or contact replied with.
 
-Example payload (new fields are additive; older subscribers can ignore them):
+### `data.reply` — matches GET /api/replies item exactly
+
+**`data.reply`** has the **exact same shape** as one element of **GET /api/replies** `replies` array:
+
+| Field | Description |
+|-------|-------------|
+| `leadId` | Lead ID (string) |
+| `messageId` | Reply message ID |
+| `respondedAtUtc` | When the reply was received (UTC ISO) |
+| `recipientEmail` | Recipient email or undefined |
+| `recipientPhone` | Recipient phone or undefined |
+| `name` | Display name (lead name or recipient) |
+| `parentMessages` | Array of `{ messageId, message, sentAtUtc, batchId, stepIndex }` (same as API) |
+
+No extra fields. Same as `GET /api/replies` response `replies[n]`.
+
+Example payload:
 
 ```json
 {
@@ -62,16 +86,37 @@ Example payload (new fields are additive; older subscribers can ignore them):
   "timestamp": "2025-03-02T15:00:00.000Z",
   "workspaceId": "org_xxx",
   "messageId": "674abc...",
-  "message": { "message": "Thanks, I'm interested!", "direction": "received" },
-  "originalMessageId": "674def...",
   "leadId": "667f1f77bcf86cd799439012",
-  "lead": { "firstName": "Jane", "lastName": "Doe" },
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "phone": "+12025551234",
+  "listId": "674list...",
   "campaignId": "674...",
   "campaignName": "Q1 Outreach",
+  "fromLineId": "699f704bc405fae6ca299a08",
+  "recipientName": "Jane Doe",
   "repliedAtUtc": "2025-03-02T14:59:58.000Z",
   "parentMessages": [
     { "messageId": "674def...", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674..._0", "stepIndex": 0 }
-  ]
+  ],
+  "message": "Thanks, I'm interested!",
+  "data": {
+    "reply": {
+      "leadId": "667f1f77bcf86cd799439012",
+      "messageId": "674abc...",
+      "respondedAtUtc": "2025-03-02T14:59:58.000Z",
+      "recipientEmail": "jane@example.com",
+      "recipientPhone": null,
+      "name": "Jane Doe",
+      "parentMessages": [
+        { "messageId": "674def...", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674..._0", "stepIndex": 0 }
+      ]
+    },
+    "repliedAtUtc": "2025-03-02T14:59:58.000Z",
+    "parentMessages": [ { "messageId": "674def...", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674..._0", "stepIndex": 0 } ]
+  },
+  "originalMessageId": "674def...",
+  "lead": { "firstName": "Jane", "lastName": "Doe", "email": "jane@example.com" }
 }
 ```
 
