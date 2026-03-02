@@ -1,6 +1,6 @@
 ---
 title: "Message Webhooks"
-description: "Real-time notifications for message delivery, failure, and fallback events"
+description: "Real-time notifications for message sent, failure, fallback, and reply events"
 icon: "webhook"
 ---
 
@@ -12,7 +12,9 @@ handles delivery automatically.
 
 <Info>
 Webhook calls are **POST** requests with a JSON body. All events share the same
-base fields; each event type adds its own specific fields.
+base fields; each event type adds its own specific fields. **Outgoing message**
+events are fired when a message is **sent** (accepted by Tuco), not when
+delivery is confirmed on the recipient's device.
 </Info>
 
 ---
@@ -21,7 +23,7 @@ base fields; each event type adds its own specific fields.
 
 | Event | When | Status field |
 |-------|------|-------------|
-| `message.delivered` | Message confirmed delivered to recipient's device | `"delivered"` |
+| `message.sent` | Message was successfully sent (accepted by Tuco) | `"sent"` |
 | `message.failed` | Message failed after all retries (technical error) | `"failed"` |
 | `message.fallback` | Recipient has no iMessage; primary channel unavailable | `"fallback"` |
 | `message.reply` | A lead or contact replied to a message you sent | — |
@@ -122,16 +124,17 @@ Example payload:
 
 ---
 
-## `message.delivered`
+## `message.sent`
 
-Sent when a message has been delivered to the recipient (for channels where
-delivery receipts are available).
+Sent when a message has been **sent** (accepted by Tuco). This is the only
+outgoing-message event fired to your webhook; Tuco does not fire a separate
+event when delivery is confirmed on the recipient's device.
 
 ```json
 {
-  "event": "message.delivered",
+  "event": "message.sent",
   "messageId": "690d1c95984d3cdcac76e9ff",
-  "status": "delivered",
+  "status": "sent",
   "message": "Hello from Tuco 👋",
   "messageType": "imessage",
   "recipientEmail": null,
@@ -141,15 +144,15 @@ delivery receipts are available).
   "workspaceId": "org_123",
   "createdByUserId": "user_123",
   "sentAt": "2025-10-15T14:30:00.000Z",
-  "timestamp": "2025-10-15T14:30:05.000Z"
+  "timestamp": "2025-10-15T14:30:00.000Z"
 }
 ```
 
-<ResponseField name="event" type="string">`"message.delivered"`</ResponseField>
+<ResponseField name="event" type="string">`"message.sent"`</ResponseField>
 <ResponseField name="messageId" type="string">Tuco message ID</ResponseField>
-<ResponseField name="status" type="string">`"delivered"`</ResponseField>
-<ResponseField name="sentAt" type="string">When the send was initiated</ResponseField>
-<ResponseField name="timestamp" type="string">When delivery was confirmed</ResponseField>
+<ResponseField name="status" type="string">`"sent"`</ResponseField>
+<ResponseField name="sentAt" type="string">When the message was sent (ISO UTC)</ResponseField>
+<ResponseField name="timestamp" type="string">When the webhook was fired (ISO UTC)</ResponseField>
 
 ---
 
@@ -242,7 +245,7 @@ Every webhook payload includes these base fields:
 
 | Field | Description |
 |-------|-------------|
-| `event` | Event type (`message.delivered`, `message.failed`, `message.fallback`) |
+| `event` | Event type (`message.sent`, `message.failed`, `message.fallback`) |
 | `messageId` | Tuco message ID — use as your primary key |
 | `status` | Final status string |
 | `message` | Body text that was sent |
