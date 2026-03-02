@@ -83,6 +83,10 @@ At a high level, each event includes:
 - **Which workspace and line** own the conversation.
 - **The body of the reply**.
 - **Timestamps** so you can order events in your own logs.
+- **`repliedAtUtc`** — when the reply was received (UTC). Always present.
+- **`parentMessages`** — the last 2 outbound messages you sent to that lead (campaign-scoped when the reply is in a campaign, otherwise last 2 in the workspace). Omitted when none exist.
+
+All of this is backward compatible: existing fields are unchanged; new fields are additive. When a reply is **outside a campaign**, `repliedAtUtc` is still set, and `parentMessages` (when present) are the last 2 messages you sent to that lead in the workspace.
 
 For concrete field names and shapes, see `/api-reference/message-webhooks`. Those schemas are the stable contracts you should integrate against; you do not need to know anything about the internal bridging or storage layers.
 

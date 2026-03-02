@@ -24,6 +24,56 @@ base fields; each event type adds its own specific fields.
 | `message.delivered` | Message confirmed delivered to recipient's device | `"delivered"` |
 | `message.failed` | Message failed after all retries (technical error) | `"failed"` |
 | `message.fallback` | Recipient has no iMessage; primary channel unavailable | `"fallback"` |
+| `message.reply` | A lead or contact replied to a message you sent | — |
+
+---
+
+## `message.reply`
+
+Sent when a new reply from a lead or contact is recorded. Use it to update your CRM, trigger automations, or log conversations.
+
+**Payload shape (backward compatible):** Existing fields are unchanged. New optional fields are additive so older integrations keep working.
+
+| Field | Description |
+|-------|-------------|
+| `event` | `"message.reply"` |
+| `timestamp` | When the webhook was sent (ISO UTC) |
+| `workspaceId` | Workspace that owns the conversation |
+| `messageId` | ID of the **reply** message (the one they sent) |
+| `message` | Full reply message object (body, recipient, etc.) |
+| `originalMessageId` | ID of the message they replied to (when known) |
+| `originalMessage` | Original outbound message object (when known) |
+| `leadId` | Lead ID (when the reply is linked to a lead) |
+| `lead` | Full lead object (when known) |
+| `campaignId` / `campaignName` | Set when the reply is tied to a campaign |
+| **`repliedAtUtc`** | **(New)** When the reply was received, in UTC (ISO 8601). Always present. |
+| **`parentMessages`** | **(New)** Last 2 outbound messages you sent to this lead before the reply. Each has `messageId`, `message` (snippet), `sentAtUtc`, and optionally `batchId` / `stepIndex`. Omitted when there are none. |
+
+**When the reply is outside a campaign:**
+
+- **`repliedAtUtc`** — Always present. Every reply has a received-at time.
+- **`parentMessages`** — When the reply is not tied to a campaign, Tuco still includes the last 2 outbound messages you sent to that lead in the workspace (any channel). So you always get context about what you last sent them, even for one-off or non-campaign replies. When the reply is tied to a campaign, `parentMessages` is scoped to that campaign’s outbound messages.
+
+Example payload (new fields are additive; older subscribers can ignore them):
+
+```json
+{
+  "event": "message.reply",
+  "timestamp": "2025-03-02T15:00:00.000Z",
+  "workspaceId": "org_xxx",
+  "messageId": "674abc...",
+  "message": { "message": "Thanks, I'm interested!", "direction": "received" },
+  "originalMessageId": "674def...",
+  "leadId": "667f1f77bcf86cd799439012",
+  "lead": { "firstName": "Jane", "lastName": "Doe" },
+  "campaignId": "674...",
+  "campaignName": "Q1 Outreach",
+  "repliedAtUtc": "2025-03-02T14:59:58.000Z",
+  "parentMessages": [
+    { "messageId": "674def...", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674..._0", "stepIndex": 0 }
+  ]
+}
+```
 
 ---
 
