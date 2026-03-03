@@ -186,6 +186,25 @@ icon: "circle-question"
 
     If one large campaign uses up capacity on a line, other campaigns using the same line may see their messages remain `queued` until the next day.
   </Accordion>
+
+  <Accordion title="What happens when I hit the daily message limit on a send (e.g. POST /api/messages)?" icon="clock">
+    When a line has reached its **daily message limit** and you call the send API (e.g. **POST /api/messages**), Tuco does **not** return an error or drop the message. It **accepts the request** and defers send to the next available window.
+
+    **What you get back (201):**
+
+    - `success: true`
+    - `status: "scheduled"`
+    - `scheduledDate`: ISO timestamp when the message will be sent (default: **09:00 Eastern** the next calendar day, or today 09:00 if the request is before 09:00 in that timezone).
+    - `reason`: e.g. `"Daily limit reached; scheduled for next send window."`
+
+    **For revops / GTM pipelines:**
+
+    - Treat **201** with `status: "scheduled"` as success: the message is queued and will send automatically at `scheduledDate`. No retry needed.
+    - Use `scheduledDate` in your CRM or analytics to show “sends at” so sales and marketing see accurate timing.
+    - To align with a specific region, send `settings.timezone` (e.g. `America/Los_Angeles`) and optionally `settings.sendWindowStart` (e.g. `"09:00"`) in the request body so the next send window matches that timezone.
+
+    **Limits:** Daily limits are per line and reset at midnight UTC. The deferred message counts toward the limit on the **day it is actually sent**, not the day the API was called.
+  </Accordion>
 </AccordionGroup>
 
 ---
