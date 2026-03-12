@@ -1,0 +1,59 @@
+{
+  "name": "Tuco Send iMessage + iMessage Received (n8n, no GHL app)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.tuco.ai/api/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_TUCO_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": \"{{ $json.message }}\",\n  \"recipientPhone\": \"{{ $json.recipientPhone || $json.phone }}\",\n  \"recipientEmail\": \"{{ $json.recipientEmail || $json.email || '' }}\",\n  \"recipientName\": \"{{ $json.recipientName || $json.name || '' }}\",\n  \"fromLineId\": \"{{ $json.fromLineId || '' }}\",\n  \"ghlContactId\": \"{{ $json.ghlContactId || $json.contactId || '' }}\",\n  \"ghlLocationId\": \"{{ $json.ghlLocationId || $json.locationId || '' }}\"\n}"
+      },
+      "id": "tuco-send-imessage-node",
+      "name": "Tuco Send iMessage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300],
+      "notesInFlow": true,
+      "notes": "Tuco app API: POST /api/messages. Auth: Header Auth credential with header 'Authorization' = 'Bearer YOUR_TUCO_API_KEY' (key starts with tuco_). Pass ghlContactId/ghlLocationId if you want GHL Conversations to stay in sync (get them from GHL API in a previous step)."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tuco-imessage-received",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "tuco-imessage-received-node",
+      "name": "Tuco iMessage Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "webhookId": "tuco-imessage-received",
+      "notesInFlow": true,
+      "notes": "Trigger when a lead replies to iMessage. In Tuco app: Settings → Webhooks → add this URL, subscribe to 'message.reply'. Payload: event, message (reply text), leadId, messageId, fromLineId, phone, repliedAtUtc, parentMessages, data.reply."
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {}
+}
