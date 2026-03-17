@@ -21,9 +21,12 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 
 ## Request body
 
-<ParamField body="message" type="string" required>
-  The text content to send. Supports plain text. Personalization placeholders
-  like `{{firstName}}` are resolved from the lead at send time.
+<ParamField body="message" type="string">
+  The text content to send. **Required unless** `attachmentUrls` is provided (you can send attachments only, or message + attachments). Personalization placeholders like `{{firstName}}` are resolved from the lead at send time.
+</ParamField>
+
+<ParamField body="attachmentUrls" type="string[]">
+  Optional array of URLs (max 2). When provided, `message` can be empty. Supported: public URLs and UploadThing/Blob URLs that belong to your workspace.
 </ParamField>
 
 <ParamField body="recipientPhone" type="string">
@@ -206,25 +209,37 @@ and contact gaps cause `status: "pending"` or `"scheduled"` — the message is
 accepted and will send when conditions are met.
 </Tip>
 
-### Success (`201 Created`)
+### Success (`201 Created` or `200 OK` when duplicate lead used)
 
 ```json
 {
   "success": true,
-  "status": "pending",
+  "status": "sent",
   "message": {
-    "_id": "690d1c95984d3cdcac76e9ff",
-    "message": "Hi, this is a test from Tuco.",
+    "_id": "69b344bc6dae1d942ece4d0e",
+    "message": "Here's your document.",
     "messageType": "imessage",
-    "status": "pending",
-    "fromLineId": "667f1f77bcf86cd799439011",
-    "recipientPhone": "+12025551234",
-    "workspaceId": "org_123",
-    "createdAt": "2025-10-15T14:30:00.000Z",
-    "updatedAt": "2025-10-15T14:30:00.000Z"
-  }
+    "status": "sent",
+    "fromLineId": "69ab427ac1feb77d7f46462e",
+    "recipientPhone": "+919042956129",
+    "recipientEmail": "goforbg@icloud.com",
+    "recipientName": "BG Real",
+    "leadId": "69b2c41d352a78479d2c623b",
+    "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+    "createdAt": "2026-03-12T22:57:00.856Z",
+    "updatedAt": "2026-03-12T22:57:02.892Z",
+    "sentAt": "2026-03-12T22:57:02.892Z",
+    "externalMessageId": "5CA93911-F0FE-4D1F-8D8C-1E3495A124F6"
+  },
+  "leadId": "69b2c41d352a78479d2c623b",
+  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null
 }
 ```
+
+When the recipient was matched to an existing lead (duplicate), the API returns **`200`** with `duplicateOnly: true`, `existingLeadIds`, and `leadIds` so your automation can continue without treating it as an error.
 
 <ResponseField name="success" type="boolean">
   `true` when the message was created.
@@ -268,8 +283,8 @@ accepted and will send when conditions are met.
 - **Time window** is satisfied (inside `sendWindowStart`–`sendWindowEnd`)
 - **Allowed day** is satisfied (today is in `allowedDaysOfWeek`)
 - **Line limits** reset (daily total or new conversations limit)
-- **Device gap** is met (min time between sends from same device)
-- **Contact gap** is met (min time between first messages to different contacts)
+- **Device gap** is met (default 30s between sends from same device)
+- **Contact gap** is met (default 45s between first messages to different contacts on same line)
 
 None of these cause an error response.
 </Info>
@@ -282,7 +297,7 @@ Errors are returned only for **validation failures** — never for pre-send chec
 
 | Status | When | Example |
 |--------|------|---------|
-| `400` | Missing `message` | `{ "error": "Missing required field: message" }` |
+| `400` | Message and attachments both empty | `{ "error": "Message and attachmentUrls cannot both be empty" }` |
 | `400` | Invalid `messageType` | `{ "error": "Invalid messageType. Must be email, sms, or imessage" }` |
 | `400` | No active lines + no `fromLineId` | `{ "error": "No active lines in workspace..." }` |
 | `400` | No recipient anywhere | `{ "error": "Either recipientEmail or recipientPhone is required..." }` |

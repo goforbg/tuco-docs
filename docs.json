@@ -84,6 +84,7 @@
       },
       {
         "tab": "API Reference",
+        "openapi": "api-reference/openapi.json",
         "groups": [
           {
             "group": "API Documentation",
@@ -92,15 +93,17 @@
             ]
           },
           {
-            "group": "Endpoints",
+            "group": "Endpoints (interactive)",
             "pages": [
+              "api-reference/endpoint/send-message",
               "api-reference/endpoint/create",
               "api-reference/endpoint/get",
+              "api-reference/endpoint/get-replies",
+              "api-reference/endpoint/get-lines",
+              "api-reference/endpoint/campaign-add-lead",
               "api-reference/endpoint/delete",
-              "api-reference/endpoint/send-message",
               "api-reference/endpoint/lead-check-availability",
               "api-reference/endpoint/bulk-check-availability",
-              "api-reference/endpoint/campaign-add-lead",
               "api-reference/endpoint/webhook"
             ]
           },

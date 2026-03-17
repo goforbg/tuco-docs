@@ -1,0 +1,76 @@
+---
+title: "Check Replies"
+api: "GET /api/replies"
+description: "Get replies for a lead or campaign — who replied and when"
+---
+
+<Note>
+Use this endpoint to check if a specific lead has replied, or to list all leads who replied (optionally scoped to a campaign). Same shape as the `message.reply` webhook payload's `data.reply`.
+</Note>
+
+## Endpoint
+
+- **Method**: `GET`
+- **Path**: `/api/replies`
+- **Auth**: `Authorization: Bearer tuco_sk_xxxxxxxxxxxxx`
+
+## Query parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `leadId` | string | Replies from this lead only (valid ObjectId; returns 404 if lead not found). |
+| `campaignId` | string | Restrict to leads who replied and are in this campaign. |
+| `recipientEmail` | string | Filter by reply sender email. |
+| `recipientPhone` | string | Filter by reply sender phone (E.164 or normalized). |
+| `page` | number | Default `1`. |
+| `limit` | number | Default `50`, max `100`. |
+
+## Example request
+
+```bash
+GET https://app.tuco.ai/api/replies?leadId=69b2c41d352a78479d2c623b&page=1&limit=50
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+## Success response (200)
+
+```json
+{
+  "replies": [
+    {
+      "leadId": "69b2c41d352a78479d2c623b",
+      "messageId": "69b340dd6dae1d942ece4d09",
+      "respondedAtUtc": "2026-03-12T22:40:29.174Z",
+      "recipientPhone": "+919042956129",
+      "recipientEmail": "goforbg@icloud.com",
+      "name": "BG Real",
+      "parentMessages": [
+        {
+          "messageId": "69b344bc6dae1d942ece4d0e",
+          "message": "Here's your document.",
+          "sentAtUtc": "2026-03-12T22:57:02.892Z",
+          "batchId": null,
+          "stepIndex": null
+        }
+      ]
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 50,
+  "totalPages": 1
+}
+```
+
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | Invalid `leadId` or `campaignId` | `{ "error": "Invalid leadId" }` or `{ "error": "Invalid campaignId" }` |
+| `401` | Missing or invalid API key | `{ "error": "Unauthorized" }` |
+| `404` | `leadId` provided but lead not found | `{ "error": "Lead not found or access denied" }` |
+| `500` | Server error | `{ "error": "Failed to fetch replies" }` |
+
+---
+
+Use the **Try it** panel (when viewing this page from the API Reference generated from OpenAPI) to run the request interactively against `https://app.tuco.ai`.

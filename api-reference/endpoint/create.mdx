@@ -39,9 +39,11 @@ This endpoint is used both for creating a single lead and for bulk uploads (mult
 ```
 
 - `leads` – one or more contacts; a single contact is just a one‑element array.  
-- `listId` – Tuco list that should own these leads.  
-- `source` – optional origin label (for example, `"api"` or `"hubspot"`).  
-- `defaultCountryCode` – used to normalize phone numbers when no country code is present.
+- `listId` – **Optional.** Tuco list that should own these leads. Omit to use the **Quick Sends** list.  
+- `source` – optional origin label (for example, `"api"` or `"gohighlevel"`).  
+- `defaultCountryCode` – used to normalize phone numbers when no country code is present.  
+- `ghlLocationId` – optional; used when syncing with GoHighLevel.  
+- You may send `body` as an alias for `leads` (same array shape).
 
 ---
 
@@ -56,8 +58,13 @@ This endpoint is used both for creating a single lead and for bulk uploads (mult
   "duplicateCount": 0,
   "totalProcessed": 1,
   "listId": "507f1f77bcf86cd799439011",
+  "leadId": "674a1b2c3d4e5f678901234a",
   "leadIds": ["674a1b2c3d4e5f678901234a"],
-  "leadListIds": ["507f1f77bcf86cd799439011"]
+  "leadListIds": ["507f1f77bcf86cd799439011"],
+  "ghlContactId": null,
+  "ghlLocationId": null,
+  "hsPortalId": null,
+  "hsContactId": null
 }
 ```
 
@@ -71,7 +78,7 @@ Response fields:
 - `leadListIds` – array of list IDs the new leads were added to (one list per request; same as `listId` when adding to a single list).  
 - `duplicates` – present only when some (but not all) leads were duplicates; each entry describes the submitted input and the existing lead in the list.
 
-**All duplicates** – status `409 Conflict`. No leads are created; the body includes `code: "DUPLICATE_LEADS"`, `duplicateCount`, and `duplicates` (each with `input` and `existingLead` including `_id`) so you can reconcile with existing records.
+**All duplicates** – status **`200 OK`** (not 409). No new leads are created; the body includes `duplicateOnly: true`, `duplicateCount`, `totalProcessed`, `leadId` (first existing), `existingLeadIds`, `leadIds`, `duplicates` (each with `input` and `existingLead` including `_id`), and integration IDs (`ghlContactId`, `ghlLocationId`, etc.) so you can reconcile with existing records and continue your workflow (e.g. n8n).
 
 **Other errors:** Validation failures return `400` with a readable error. If the requested list does not exist, you get `404`. If the workspace is temporarily read‑only (e.g. payment past due), you get `402` with `code: "READ_ONLY"`. See `/api-reference/errors` for more.
 

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Tuco AI API",
-    "description": "Send iMessages, SMS, and email at scale via the Tuco messaging platform",
+    "description": "Send iMessages, SMS, and email at scale. Create leads, add to campaigns, get lines, check replies. All endpoints support Bearer API key (`Authorization: Bearer tuco_sk_...`).",
     "version": "1.0.0",
     "contact": {
       "email": "support@tuco.ai",
@@ -15,60 +15,34 @@
       "description": "Production"
     }
   ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
+  "security": [{ "bearerAuth": [] }],
   "paths": {
     "/api/messages": {
       "post": {
         "operationId": "sendMessage",
-        "summary": "Send a message",
-        "description": "Send an iMessage, SMS, or email to a recipient. Tuco handles retries, delivery verification, and fallback internally.",
+        "summary": "Send iMessage / SMS / Email",
+        "description": "Send one message to a recipient. Use `leadId` or `recipientPhone`/`recipientEmail`. Tuco round-robins lines when `fromLineId` is omitted. Either `message` or `attachmentUrls` (or both) is required.",
         "tags": ["Messages"],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SendMessageRequest"
-              },
+              "schema": { "$ref": "#/components/schemas/SendMessageRequest" },
               "examples": {
                 "minimal": {
-                  "summary": "Minimal (defaults to iMessage)",
-                  "value": {
-                    "message": "Hi, this is a test from Tuco.",
-                    "recipientPhone": "+12025551234"
-                  }
+                  "summary": "Minimal (iMessage)",
+                  "value": { "message": "Hi from Tuco.", "recipientPhone": "+12025551234" }
                 },
-                "withAltContacts": {
-                  "summary": "With alt contacts + time window",
-                  "value": {
-                    "message": "Hey, quick question about next week.",
-                    "recipientPhone": "+12025551234",
-                    "altPhone1": "+12025559876",
-                    "altEmail1": "prospect@icloud.com",
-                    "timezone": "America/New_York",
-                    "sendWindowStart": "09:00",
-                    "sendWindowEnd": "17:00",
-                    "allowedDaysOfWeek": [1, 2, 3, 4, 5]
-                  }
-                },
-                "existingLead": {
+                "withLead": {
                   "summary": "Send to existing lead",
-                  "value": {
-                    "message": "Following up on our conversation.",
-                    "leadId": "667f1f77bcf86cd799439012"
-                  }
+                  "value": { "message": "Following up.", "leadId": "674a1b2c3d4e5f6789012345" }
                 },
-                "scheduledWithFallback": {
-                  "summary": "Scheduled + fallback SMS on failure",
+                "withAttachments": {
+                  "summary": "With attachments (max 2)",
                   "value": {
-                    "message": "Reminder: your appointment is tomorrow at 2pm.",
-                    "recipientPhone": "+12025551234",
-                    "scheduledDate": "2025-10-15T14:30:00Z",
-                    "sendFallbackSmsOnFailed": true
+                    "message": "Here’s the doc.",
+                    "leadId": "674a1b2c3d4e5f6789012345",
+                    "attachmentUrls": ["https://example.com/doc.pdf"]
                   }
                 }
               }
@@ -77,102 +51,294 @@
         },
         "responses": {
           "201": {
-            "description": "Message created successfully",
+            "description": "Message created and sent or queued",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SendMessageResponse"
-                },
+                "schema": { "$ref": "#/components/schemas/SendMessageResponse" }
+              }
+            }
+          },
+          "200": {
+            "description": "Message sent using existing duplicate lead",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SendMessageResponse" },
                 "example": {
+                  "message": { "_id": "...", "message": "Hi", "status": "sent" },
                   "success": true,
-                  "status": "pending",
-                  "message": {
-                    "_id": "690d1c95984d3cdcac76e9ff",
-                    "message": "Hi, this is a test from Tuco.",
-                    "messageType": "imessage",
-                    "status": "pending",
-                    "fromLineId": "667f1f77bcf86cd799439011",
-                    "recipientPhone": "+12025551234",
-                    "workspaceId": "org_123",
-                    "createdAt": "2025-10-15T14:30:00.000Z",
-                    "updatedAt": "2025-10-15T14:30:00.000Z"
-                  }
+                  "leadId": "69b2c41d352a78479d2c623b",
+                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                  "duplicateOnly": true,
+                  "existingLeadIds": ["69b2c41d352a78479d2c623b"],
+                  "leadIds": ["69b2c41d352a78479d2c623b"],
+                  "duplicateMessage": "Lead was duplicate; message sent using existing lead."
                 }
               }
             }
           },
           "400": {
-            "description": "Validation error",
+            "description": "Validation error — see examples for every possible body",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
                 "examples": {
-                  "missingMessage": {
-                    "summary": "Missing required field",
-                    "value": {
-                      "error": "Missing required field: message"
-                    }
-                  },
-                  "invalidMessageType": {
-                    "summary": "Invalid messageType",
-                    "value": {
-                      "error": "Invalid messageType. Must be email, sms, or imessage"
-                    }
-                  },
-                  "fallbackNotConfigured": {
-                    "summary": "Fallback not configured",
-                    "value": {
-                      "error": "sendFallbackSmsOnFailed is enabled but workspace fallback SMS is not configured",
-                      "code": "FALLBACK_NOT_CONFIGURED"
-                    }
-                  }
+                  "bodyNotObject": { "summary": "Body not JSON object", "value": { "error": "Request body must be a JSON object" } },
+                  "invalidJson": { "summary": "Invalid JSON", "value": { "error": "Invalid request body (JSON required)" } },
+                  "empty": { "summary": "Message and attachments empty", "value": { "error": "Message and attachmentUrls cannot both be empty" } },
+                  "invalidType": { "summary": "Invalid messageType", "value": { "error": "Invalid messageType. Must be email, sms, or imessage" } },
+                  "attachmentUrlsNotArray": { "summary": "attachmentUrls not array", "value": { "error": "attachmentUrls must be an array" } },
+                  "maxAttachments": { "summary": "More than 2 attachments", "value": { "error": "Maximum 2 attachments per message" } },
+                  "noLines": { "summary": "No active lines", "value": { "error": "No active lines in workspace. Add and activate a line, or provide fromLineId." } },
+                  "invalidScheduledDate": { "summary": "Invalid scheduledDate", "value": { "error": "Invalid scheduledDate format" } },
+                  "invalidTimeWindow": { "summary": "Invalid time format", "value": { "error": "Invalid time format. sendWindowStart and sendWindowEnd must be in HH:mm format (e.g., 09:00, 17:00)" } },
+                  "invalidTimezone": { "summary": "Invalid timezone/window", "value": { "error": "Invalid timezone or time window settings. Please check your timezone and time format." } },
+                  "noRecipient": { "summary": "No recipient", "value": { "error": "Either recipientEmail or recipientPhone is required (in body or on the lead when leadId is provided)." } },
+                  "fallback": { "summary": "Fallback not configured", "value": { "error": "sendFallbackSmsOnFailed is true but fallback SMS is not configured. Configure fallback in workspace settings (Settings → Fallback) or set sendFallbackSmsOnFailed to false.", "code": "FALLBACK_NOT_CONFIGURED" } }
                 }
               }
             }
           },
-          "401": {
-            "description": "Authentication failed",
+          "403": {
+            "description": "Attachment URL not allowed for this workspace",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "Unauthorized"
-                }
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "Attachment URL does not belong to this organization" }
               }
             }
           },
-          "402": {
-            "description": "Workspace read-only (subscription past due)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "READ_ONLY",
-                  "code": "READ_ONLY",
-                  "reason": "past_due"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Lead not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                },
-                "example": {
-                  "error": "Lead not found or access denied"
-                }
-              }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found or access denied" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/api/leads": {
+      "post": {
+        "operationId": "createLeads",
+        "summary": "Create or import leads",
+        "description": "Create one or more leads. Omit `listId` to use Quick Sends list. Accepts `leads` array or `body` as alias. Returns 200 when all duplicates (existing lead IDs returned).",
+        "tags": ["Leads"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateLeadsRequest" }
             }
           }
+        },
+        "responses": {
+          "201": {
+            "description": "At least one lead created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateLeadsResponse" }
+              }
+            }
+          },
+          "200": {
+            "description": "All leads were duplicates; existing IDs returned",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateLeadsDuplicateResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Read-only (past due)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "List not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "List not found. The specified listId does not exist or is invalid. Omit listId to use the Quick Sends list." } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      },
+      "get": {
+        "operationId": "getLeads",
+        "summary": "Get leads (search or single)",
+        "description": "List leads with optional `search`, `listId`, `page`, `limit`. Use query `id` for a single lead by ID.",
+        "tags": ["Leads"],
+        "parameters": [
+          { "name": "id", "in": "query", "description": "Single lead ID (returns { lead })", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "description": "Search firstName, lastName, email, phone, companyName (case-insensitive)", "schema": { "type": "string" } },
+          { "name": "listId", "in": "query", "description": "Filter by list", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leads and lists (or single lead when id provided)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetLeadsResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid lead id or no workspace",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalidLeadId": { "summary": "Invalid lead id", "value": { "error": "Invalid lead id" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Lead not found (when id provided)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } },
+          "503": { "description": "Search timeout", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Search timed out. Try a more specific search or fewer results." } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/lines/by-user": {
+      "get": {
+        "operationId": "getLines",
+        "summary": "Get all lines",
+        "description": "Returns all lines for the authenticated workspace with usage and health.",
+        "tags": ["Lines"],
+        "responses": {
+          "200": {
+            "description": "List of lines",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetLinesResponse" }
+              }
+            }
+          },
+          "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/api/replies": {
+      "get": {
+        "operationId": "getReplies",
+        "summary": "Check replies for a lead (or campaign)",
+        "description": "Returns leads who have replied. Filter by `leadId`, `campaignId`, `recipientEmail`, or `recipientPhone`. Paginated.",
+        "tags": ["Replies"],
+        "parameters": [
+          { "name": "leadId", "in": "query", "description": "Replies from this lead only", "schema": { "type": "string" } },
+          { "name": "campaignId", "in": "query", "description": "Replies from leads in this campaign", "schema": { "type": "string" } },
+          { "name": "recipientEmail", "in": "query", "schema": { "type": "string" } },
+          { "name": "recipientPhone", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replies list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetRepliesResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid leadId or campaignId",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalidLeadId": { "summary": "Invalid leadId", "value": { "error": "Invalid leadId" } },
+                  "invalidCampaignId": { "summary": "Invalid campaignId", "value": { "error": "Invalid campaignId" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": {
+            "description": "Lead or campaign not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "leadNotFound": { "summary": "Lead not found", "value": { "error": "Lead not found or access denied" } },
+                  "campaignNotFound": { "summary": "Campaign not found", "value": { "error": "Campaign not found" } }
+                }
+              }
+            }
+          },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Failed to fetch replies" } } } }
+        }
+      }
+    },
+    "/api/campaigns/{id}/leads": {
+      "post": {
+        "operationId": "addLeadToCampaign",
+        "summary": "Add lead to campaign",
+        "description": "Add an existing lead by `leadId` or create a new lead with `lead` object. Starts the campaign sequence. Returns 200 when lead already in campaign.",
+        "tags": ["Campaigns"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "description": "Campaign ID", "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddLeadToCampaignRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Lead added and sequence started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AddLeadToCampaignResponse" }
+              }
+            }
+          },
+          "200": {
+            "description": "Lead already in campaign",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AddLeadToCampaignResponse" },
+                "example": {
+                  "success": true,
+                  "leadId": "69b2c41d352a78479d2c623b",
+                  "campaignId": "69ab444ac1feb77d7f46462f",
+                  "messageCount": 0,
+                  "message": "Lead already in campaign (re-entry not allowed).",
+                  "alreadyInCampaign": true,
+                  "existingLeadIds": ["69b2c41d352a78479d2c623b"],
+                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing leadId/lead or validation",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "eitherRequired": { "summary": "leadId or lead required", "value": { "error": "Either leadId or lead data is required" } },
+                  "firstNameRequired": { "summary": "firstName required when using lead", "value": { "error": "firstName is required" } },
+                  "emailOrPhoneRequired": { "summary": "email or phone required", "value": { "error": "Either email or phone is required" } },
+                  "invalidRequest": { "summary": "Invalid request", "value": { "error": "Invalid request: must provide leadId or lead data" } },
+                  "leadNotResolved": { "summary": "Lead not resolved", "value": { "error": "Lead not resolved" } },
+                  "processFailed": { "summary": "Process failed", "value": { "error": "Failed to process lead through campaign" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": {
+            "description": "Campaign or lead not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "campaignNotFound": { "summary": "Campaign not found", "value": { "error": "Campaign not found" } },
+                  "leadNotFound": { "summary": "Lead not found", "value": { "error": "Lead not found" } }
+                }
+              }
+            }
+          },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }
     }
@@ -182,97 +348,56 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "Workspace API key (e.g. tuco_sk_xxxxxxxxxxxxx)"
+        "bearerFormat": "API Key",
+        "description": "Workspace API key: Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
       }
     },
     "schemas": {
       "SendMessageRequest": {
         "type": "object",
-        "required": ["message"],
         "properties": {
-          "message": {
-            "type": "string",
-            "description": "Text content to send"
-          },
-          "messageType": {
-            "type": "string",
-            "enum": ["imessage", "sms", "email"],
-            "default": "imessage",
-            "description": "Channel to use (defaults to imessage)"
-          },
-          "recipientPhone": {
-            "type": "string",
-            "description": "Phone number in E.164 format"
-          },
-          "recipientEmail": {
-            "type": "string",
-            "description": "Email address"
-          },
-          "recipientName": {
-            "type": "string",
-            "description": "Display name for the recipient"
-          },
-          "fromLineId": {
-            "type": "string",
-            "description": "Line ID to send from (optional; round-robin when omitted)"
-          },
-          "leadId": {
-            "type": "string",
-            "description": "Existing lead ID to link and send to"
-          },
-          "altPhone1": { "type": "string", "description": "Alternate phone 1" },
-          "altPhone2": { "type": "string", "description": "Alternate phone 2" },
-          "altPhone3": { "type": "string", "description": "Alternate phone 3" },
-          "altEmail1": { "type": "string", "description": "Alternate email 1" },
-          "altEmail2": { "type": "string", "description": "Alternate email 2" },
-          "altEmail3": { "type": "string", "description": "Alternate email 3" },
-          "scheduledDate": {
-            "type": "string",
-            "format": "date-time",
-            "description": "ISO 8601 timestamp for scheduled send"
-          },
-          "timezone": {
-            "type": "string",
-            "description": "IANA timezone for send window (e.g. America/New_York)"
-          },
-          "sendWindowStart": {
-            "type": "string",
-            "description": "Earliest send time in HH:mm format"
-          },
-          "sendWindowEnd": {
-            "type": "string",
-            "description": "Latest send time in HH:mm format"
-          },
-          "allowedDaysOfWeek": {
-            "type": "array",
-            "items": { "type": "integer", "minimum": 0, "maximum": 6 },
-            "description": "Days when sending is allowed (0=Sun, 6=Sat)"
-          },
-          "sendFallbackSmsOnFailed": {
-            "type": "boolean",
-            "default": false,
-            "description": "Send fallback SMS via Twilio if message fails (requires fallback config)"
-          },
-          "batchId": {
-            "type": "string",
-            "description": "Free-form grouping identifier"
-          }
+          "message": { "type": "string", "description": "Text content. Required unless attachmentUrls provided." },
+          "messageType": { "type": "string", "enum": ["imessage", "sms", "email"], "default": "imessage" },
+          "recipientPhone": { "type": "string", "description": "E.164 phone" },
+          "recipientEmail": { "type": "string" },
+          "recipientName": { "type": "string" },
+          "fromLineId": { "type": "string", "description": "Optional; round-robin when omitted" },
+          "leadId": { "type": "string", "description": "Existing lead ID" },
+          "altPhone1": { "type": "string" },
+          "altPhone2": { "type": "string" },
+          "altPhone3": { "type": "string" },
+          "altEmail1": { "type": "string" },
+          "altEmail2": { "type": "string" },
+          "altEmail3": { "type": "string" },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "timezone": { "type": "string" },
+          "sendWindowStart": { "type": "string", "description": "HH:mm" },
+          "sendWindowEnd": { "type": "string", "description": "HH:mm" },
+          "allowedDaysOfWeek": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 6 } },
+          "sendFallbackSmsOnFailed": { "type": "boolean", "default": false },
+          "batchId": { "type": "string" },
+          "attachmentUrls": { "type": "array", "items": { "type": "string", "format": "uri" }, "maxItems": 2 },
+          "attachmentNames": { "type": "array", "items": { "type": "string" } }
         }
       },
       "SendMessageResponse": {
         "type": "object",
         "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "status": {
-            "type": "string",
-            "enum": ["sent", "pending", "scheduled", "fallback", "failed"],
-            "description": "Current message status"
-          },
-          "message": {
-            "$ref": "#/components/schemas/Message"
-          }
+          "message": { "$ref": "#/components/schemas/Message" },
+          "success": { "type": "boolean" },
+          "leadId": { "type": "string", "nullable": true },
+          "ghlContactId": { "type": "string", "nullable": true },
+          "ghlLocationId": { "type": "string", "nullable": true },
+          "hsPortalId": { "type": "string", "nullable": true },
+          "hsContactId": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["sent", "pending", "scheduled", "fallback", "failed"] },
+          "reason": { "type": "string" },
+          "scheduledDate": { "type": "string", "format": "date-time" },
+          "duplicateOnly": { "type": "boolean" },
+          "existingLeadIds": { "type": "array", "items": { "type": "string" } },
+          "leadIds": { "type": "array", "items": { "type": "string" } },
+          "duplicateMessage": { "type": "string" },
+          "error": { "type": "string" }
         }
       },
       "Message": {
@@ -280,11 +405,8 @@
         "properties": {
           "_id": { "type": "string" },
           "message": { "type": "string" },
-          "messageType": { "type": "string", "enum": ["imessage", "sms", "email"] },
-          "status": {
-            "type": "string",
-            "enum": ["queued", "pending", "sending", "sent", "delivered", "failed", "fallback", "scheduled", "cancelled"]
-          },
+          "messageType": { "type": "string" },
+          "status": { "type": "string" },
           "fromLineId": { "type": "string" },
           "fromLinePhone": { "type": "string" },
           "fromLineEmail": { "type": "string" },
@@ -293,34 +415,243 @@
           "recipientName": { "type": "string" },
           "leadId": { "type": "string" },
           "workspaceId": { "type": "string" },
-          "createdByUserId": { "type": "string" },
-          "scheduledDate": { "type": "string", "format": "date-time" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
           "sentAt": { "type": "string", "format": "date-time" },
           "deliveredAt": { "type": "string", "format": "date-time" },
           "errorMessage": { "type": "string" },
-          "checkedAddresses": { "type": "array", "items": { "type": "string" } },
-          "sendFallbackSmsOnFailed": { "type": "boolean" },
+          "attachmentUrls": { "type": "array", "items": { "type": "string" } },
+          "externalMessageId": { "type": "string" }
+        }
+      },
+      "CreateLeadsRequest": {
+        "type": "object",
+        "properties": {
+          "leads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "firstName": { "type": "string" },
+                "lastName": { "type": "string" },
+                "email": { "type": "string" },
+                "phone": { "type": "string" },
+                "companyName": { "type": "string" },
+                "jobTitle": { "type": "string" },
+                "notes": { "type": "string" },
+                "customFields": { "type": "object" },
+                "externalId": { "type": "string" }
+              }
+            }
+          },
+          "body": { "description": "Alias for leads (same as leads array)" },
+          "listId": { "type": "string", "description": "Omit to use Quick Sends list" },
+          "source": { "type": "string", "default": "csv" },
+          "defaultCountryCode": { "type": "string", "default": "+1" },
+          "ghlLocationId": { "type": "string" }
+        }
+      },
+      "CreateLeadsResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "savedCount": { "type": "integer" },
+          "duplicateCount": { "type": "integer" },
+          "totalProcessed": { "type": "integer" },
+          "listId": { "type": "string" },
+          "leadId": { "type": "string", "nullable": true },
+          "leadIds": { "type": "array", "items": { "type": "string" } },
+          "leadListIds": { "type": "array", "items": { "type": "string" } },
+          "duplicates": { "type": "array" },
+          "ghlContactId": { "type": "string", "nullable": true },
+          "ghlLocationId": { "type": "string", "nullable": true },
+          "hsPortalId": { "type": "string", "nullable": true },
+          "hsContactId": { "type": "string", "nullable": true }
+        }
+      },
+      "CreateLeadsDuplicateResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "duplicateOnly": { "type": "boolean" },
+          "duplicateCount": { "type": "integer" },
+          "totalProcessed": { "type": "integer" },
+          "leadId": { "type": "string", "nullable": true },
+          "existingLeadIds": { "type": "array", "items": { "type": "string" } },
+          "leadIds": { "type": "array", "items": { "type": "string" } },
+          "duplicates": { "type": "array" },
+          "ghlContactId": { "type": "string", "nullable": true },
+          "ghlLocationId": { "type": "string", "nullable": true },
+          "hsPortalId": { "type": "string", "nullable": true },
+          "hsContactId": { "type": "string", "nullable": true }
+        }
+      },
+      "GetLeadsResponse": {
+        "oneOf": [
+          { "type": "object", "properties": { "lead": { "$ref": "#/components/schemas/Lead" } } },
+          {
+            "type": "object",
+            "properties": {
+              "leads": { "type": "array", "items": { "$ref": "#/components/schemas/Lead" } },
+              "lists": { "type": "array", "items": { "$ref": "#/components/schemas/List" } },
+              "pagination": { "$ref": "#/components/schemas/Pagination" }
+            }
+          }
+        ]
+      },
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "listId": { "type": "string" },
+          "workspaceId": { "type": "string" },
+          "source": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
-      "ErrorResponse": {
+      "List": {
         "type": "object",
         "properties": {
-          "error": {
-            "type": "string",
-            "description": "Human-readable error message"
-          },
-          "code": {
-            "type": "string",
-            "description": "Machine-readable error code (when applicable)"
-          },
-          "reason": {
-            "type": "string",
-            "description": "Additional context (when applicable)"
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "workspaceId": { "type": "string" },
+          "leadCount": { "type": "integer" }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalCount": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "GetLinesResponse": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "_id": { "type": "string" },
+                "workspaceId": { "type": "string" },
+                "phone": { "type": "string" },
+                "email": { "type": "string" },
+                "firstName": { "type": "string" },
+                "lastName": { "type": "string" },
+                "isActive": { "type": "boolean" },
+                "provisioningStatus": { "type": "string" },
+                "lineType": { "type": "string" },
+                "dailyNewConversationsLimit": { "type": "integer" },
+                "dailyTotalMessagesLimit": { "type": "integer" },
+                "usage": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string" },
+                    "newConversationsCount": { "type": "integer" },
+                    "totalMessagesCount": { "type": "integer" }
+                  }
+                },
+                "healthCheck": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["healthy", "down"] },
+                    "lastCheckedAt": { "type": "string", "format": "date-time" }
+                  }
+                },
+                "createdAt": { "type": "string", "format": "date-time" },
+                "updatedAt": { "type": "string", "format": "date-time" }
+              }
+            }
           }
-        },
-        "required": ["error"]
+        }
+      },
+      "GetRepliesResponse": {
+        "type": "object",
+        "properties": {
+          "replies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "leadId": { "type": "string" },
+                "messageId": { "type": "string" },
+                "respondedAtUtc": { "type": "string", "format": "date-time" },
+                "recipientEmail": { "type": "string" },
+                "recipientPhone": { "type": "string" },
+                "name": { "type": "string" },
+                "parentMessages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messageId": { "type": "string" },
+                      "message": { "type": "string" },
+                      "sentAtUtc": { "type": "string" },
+                      "batchId": { "type": "string" },
+                      "stepIndex": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        }
+      },
+      "AddLeadToCampaignRequest": {
+        "type": "object",
+        "properties": {
+          "leadId": { "type": "string", "description": "Existing lead ID" },
+          "lead": {
+            "type": "object",
+            "description": "Create new lead and add",
+            "properties": {
+              "firstName": { "type": "string" },
+              "lastName": { "type": "string" },
+              "email": { "type": "string" },
+              "phone": { "type": "string" },
+              "companyName": { "type": "string" },
+              "jobTitle": { "type": "string" }
+            }
+          }
+        }
+      },
+      "AddLeadToCampaignResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "leadId": { "type": "string" },
+          "campaignId": { "type": "string" },
+          "messageCount": { "type": "integer" },
+          "message": { "type": "string" },
+          "alreadyInCampaign": { "type": "boolean" },
+          "existingLeadIds": { "type": "array", "items": { "type": "string" } },
+          "ghlContactId": { "type": "string", "nullable": true },
+          "ghlLocationId": { "type": "string", "nullable": true },
+          "hsPortalId": { "type": "string", "nullable": true },
+          "hsContactId": { "type": "string", "nullable": true }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" },
+          "code": { "type": "string" },
+          "reason": { "type": "string" }
+        }
       }
     }
   }

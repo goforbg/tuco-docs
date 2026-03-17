@@ -121,8 +121,8 @@ the message is accepted and waits.
 |-------|--------------|-------------|
 | **Time window** | Only send inside `sendWindowStart`–`sendWindowEnd` on `allowedDaysOfWeek` | Stay **queued** until next valid time |
 | **Line limits** | Daily total messages / daily new conversations per line | Stay **queued** until limits reset |
-| **Device gap** | Minimum time between sends from the same physical device | **Queued** or **rescheduled** |
-| **Contact gap** | Minimum time between first messages to different contacts on the same line | Stay **queued** |
+| **Device gap** | Minimum time between sends from the same physical device (default **30s**) | **Queued** or **rescheduled** |
+| **Contact gap** | Minimum time between first messages to different contacts on the same line (default **45s**) | Stay **queued** |
 
 <Note>
 You can check why a message is still queued by looking at your Loki/Grafana

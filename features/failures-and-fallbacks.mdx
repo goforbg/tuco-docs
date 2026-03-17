@@ -202,6 +202,43 @@ All of this can be done using only the **public surfaces** Tuco exposes—no nee
 
 ---
 
+## Send SMS via GoHighLevel (GHL) as fallback
+
+When you receive a **`message.fallback`** webhook (recipient has no iMessage), you can send the same content as SMS using **GoHighLevel LeadConnector**. This keeps the conversation in one place in GHL.
+
+**Webhook payload you receive** (relevant fields):
+
+- `body.leadId`, `body.ghlContactId`, `body.ghlLocationId`
+- `body.message` — for fallback the **message object** is in `body.message`; use `body.message.message` for the text, or `body.data.reason` for context.
+- For **outbound** fallback (you tried to send iMessage, it failed): `body.message` is the full message document; `body.message.message` is the text to send via SMS.
+
+**GHL API call (LeadConnector):**
+
+```http
+POST https://services.leadconnectorhq.com/conversations/messages
+Authorization: Bearer <your_ghl_api_token>
+Version: 2021-07-28
+Content-Type: application/json
+```
+
+**Body (form or JSON per GHL docs):**
+
+| Field | Value |
+|-------|--------|
+| `locationId` | `body.ghlLocationId` from webhook |
+| `contactId` | `body.ghlContactId` from webhook |
+| `message` | Text to send (e.g. `body.message.message` or the original message text) |
+| `type` | `SMS` |
+| `lastMessageDate` | Current time (e.g. `Date.now()`) |
+
+Example (n8n / automation): when the **Failed & Fallback** webhook fires, read `ghlContactId`, `ghlLocationId`, and the message text from the webhook body, then POST to LeadConnector’s `conversations/messages` with `type: "SMS"`. The conversation will appear in GHL as SMS.
+
+<Note>
+Tuco can also send **fallback SMS via Twilio** automatically when you enable **sendFallbackSmsOnFailed** and configure Twilio in workspace settings. The GHL approach above is for teams who want fallback to go through GoHighLevel instead.
+</Note>
+
+---
+
 ## Best Practices
 
 - **Focus on trends, not one‑offs**

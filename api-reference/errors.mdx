@@ -44,14 +44,14 @@ field indicates the outcome (`pending`, `scheduled`, etc.).
 </Note>
 
 <AccordionGroup>
-  <Accordion title="400 — Missing required field: message">
-    The `message` body field is required and was not provided.
+  <Accordion title="400 — Message and attachments both empty">
+    Neither `message` nor `attachmentUrls` was provided (or both were empty).
 
     ```json
-    { "error": "Missing required field: message" }
+    { "error": "Message and attachmentUrls cannot both be empty" }
     ```
 
-    **Fix:** Include a non-empty `message` string in your request body.
+    **Fix:** Include at least one of: a non-empty `message` string, or an `attachmentUrls` array with up to 2 URLs.
   </Accordion>
 
   <Accordion title="400 — Invalid messageType">

@@ -1,0 +1,67 @@
+---
+title: "Get All Lines"
+api: "GET /api/lines/by-user"
+description: "List all iMessage/SMS lines for the authenticated workspace"
+---
+
+<Note>
+Returns every line for the workspace with usage (new conversations and total messages for today) and health status. Use the line `_id` as `fromLineId` when sending messages, or omit it for round-robin.
+</Note>
+
+## Endpoint
+
+- **Method**: `GET`
+- **Path**: `/api/lines/by-user`
+- **Auth**: `Authorization: Bearer tuco_sk_xxxxxxxxxxxxx`
+
+## Example request
+
+```bash
+GET https://app.tuco.ai/api/lines/by-user
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+## Success response (200)
+
+```json
+{
+  "lines": [
+    {
+      "_id": "699f704bc405fae6ca299a08",
+      "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0",
+      "phone": "+16462230920",
+      "email": "goforlisa@icloud.com",
+      "firstName": "Lindsey",
+      "lastName": "Rodriguez",
+      "isActive": true,
+      "provisioningStatus": "active",
+      "lineType": "byon",
+      "dailyNewConversationsLimit": 20,
+      "dailyTotalMessagesLimit": 50,
+      "usage": {
+        "date": "2026-03-01",
+        "newConversationsCount": 4,
+        "totalMessagesCount": 11
+      },
+      "healthCheck": {
+        "status": "healthy",
+        "lastCheckedAt": "2026-03-01T20:52:00.097Z"
+      },
+      "createdAt": "2026-02-25T21:57:31.276Z",
+      "updatedAt": "2026-03-01T20:52:04.622Z"
+    }
+  ]
+}
+```
+
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | No active workspace | `{ "error": "No active workspace" }` |
+| `401` | Missing or invalid API key | `{ "error": "Unauthorized" }` |
+| `500` | Server error | `{ "error": "Internal server error" }` |
+
+---
+
+Use the **Try it** panel to run this request interactively.

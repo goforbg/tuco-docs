@@ -21,12 +21,13 @@ delivery is confirmed on the recipient's device.
 
 ## Event types
 
-| Event | When | Status field |
-|-------|------|-------------|
-| `message.sent` | Message was successfully sent (accepted by Tuco) | `"sent"` |
-| `message.failed` | Message failed after all retries (technical error) | `"failed"` |
-| `message.fallback` | Recipient has no iMessage; primary channel unavailable | `"fallback"` |
-| `message.reply` | A lead or contact replied to a message you sent | — |
+| Event | When | Payload `message` type | Status field |
+|-------|------|------------------------|--------------|
+| `message.sent` | Message was successfully sent (accepted by Tuco) | **Object** (full message doc) | `"sent"` |
+| `message.failed` | Message failed after all retries (technical error) | **Object** (full message doc) | `"failed"` |
+| `message.fallback` | Recipient has no iMessage; primary channel unavailable | **Object** (full message doc) | `"fallback"` |
+| `message.opened` | Recipient opened/read the message (read receipt; when supported) | **Object** (full message doc with `readAt`) | — |
+| `message.reply` | A lead or contact replied to a message you sent | **String** (reply text only) | — |
 
 ---
 
@@ -130,28 +131,51 @@ Sent when a message has been **sent** (accepted by Tuco). This is the only
 outgoing-message event fired to your webhook; Tuco does not fire a separate
 event when delivery is confirmed on the recipient's device.
 
+**Payload:** The **`message`** field is the **full message object** (not a string), with `_id`, `message`, `messageType`, `status`, `fromLineId`, `recipientPhone`, `recipientEmail`, `recipientName`, `leadId`, `workspaceId`, `createdByUserId`, `sentAt`, `createdAt`, `updatedAt`, etc. Top-level also includes `leadId`, `lead` (full lead when available), `campaignId`, `campaignName`, and integration IDs.
+
+### Full example body
+
 ```json
 {
   "event": "message.sent",
-  "messageId": "690d1c95984d3cdcac76e9ff",
-  "status": "sent",
-  "message": "Hello from Tuco 👋",
-  "messageType": "imessage",
-  "recipientEmail": null,
-  "recipientPhone": "+12025551234",
-  "recipientName": "Jane Doe",
-  "leadId": "667f1f77bcf86cd799439012",
-  "workspaceId": "org_123",
-  "createdByUserId": "user_123",
-  "sentAt": "2025-10-15T14:30:00.000Z",
-  "timestamp": "2025-10-15T14:30:00.000Z"
+  "timestamp": "2026-03-12T22:57:03.000Z",
+  "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+  "messageId": "69b344bc6dae1d942ece4d0e",
+  "message": {
+    "_id": "69b344bc6dae1d942ece4d0e",
+    "message": "Here's your document.",
+    "messageType": "imessage",
+    "status": "sent",
+    "fromLineId": "69ab427ac1feb77d7f46462e",
+    "recipientPhone": "+919042956129",
+    "recipientEmail": "goforbg@icloud.com",
+    "recipientName": "BG Real",
+    "leadId": "69b2c41d352a78479d2c623b",
+    "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+    "createdByUserId": "user_3AZrxEi8CR2uMq9simYrwcJpfsL",
+    "sentAt": "2026-03-12T22:57:02.892Z",
+    "createdAt": "2026-03-12T22:57:00.856Z",
+    "updatedAt": "2026-03-12T22:57:02.892Z"
+  },
+  "leadId": "69b2c41d352a78479d2c623b",
+  "lead": { "_id": "69b2c41d352a78479d2c623b", "firstName": "BG", "lastName": "Real", "email": "goforbg@icloud.com", "phone": "+919042956129", "listId": "69ab444ac1feb77d7f46462f", "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG", "source": "gohighlevel" },
+  "campaignId": null,
+  "campaignName": null,
+  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null,
+  "data": {}
 }
 ```
 
 <ResponseField name="event" type="string">`"message.sent"`</ResponseField>
 <ResponseField name="messageId" type="string">Tuco message ID</ResponseField>
-<ResponseField name="status" type="string">`"sent"`</ResponseField>
-<ResponseField name="sentAt" type="string">When the message was sent (ISO UTC)</ResponseField>
+<ResponseField name="message" type="object">Full message document (not string)</ResponseField>
+<ResponseField name="leadId" type="string">Lead ID when known</ResponseField>
+<ResponseField name="lead" type="object">Full lead when available</ResponseField>
+<ResponseField name="ghlContactId" type="string | null">GHL contact ID for integrations</ResponseField>
+<ResponseField name="ghlLocationId" type="string | null">GHL location ID for integrations</ResponseField>
 <ResponseField name="timestamp" type="string">When the webhook was fired (ISO UTC)</ResponseField>
 
 ---
@@ -159,27 +183,44 @@ event when delivery is confirmed on the recipient's device.
 ## `message.failed`
 
 Sent when a message has exhausted all retry attempts or encountered an
-unrecoverable error (e.g. availability API failure).
+unrecoverable error (e.g. availability API failure). The **`message`** field is the **full message object** (includes `errorMessage` when set). **`data`** may include `error` (reason string).
+
+### Full example body
 
 ```json
 {
   "event": "message.failed",
-  "messageId": "690d1c95984d3cdcac76e9ff",
-  "status": "failed",
-  "message": "Hello from Tuco 👋",
-  "messageType": "imessage",
-  "recipientPhone": "+12025551234",
-  "recipientName": "Jane Doe",
-  "leadId": "667f1f77bcf86cd799439012",
-  "workspaceId": "org_123",
-  "createdByUserId": "user_123",
-  "reason": "Send failed after 5 attempts",
-  "timestamp": "2025-10-15T14:35:00.000Z"
+  "timestamp": "2026-03-12T22:45:00.000Z",
+  "workspaceId": "org_xxx",
+  "messageId": "69b3414e6dae1d942ece4d0d",
+  "message": {
+    "_id": "69b3414e6dae1d942ece4d0d",
+    "message": "Hi from N8N - mar 13",
+    "messageType": "imessage",
+    "status": "failed",
+    "recipientPhone": "+919894486982",
+    "recipientName": "Usha Giridhar",
+    "leadId": "69b3414e6dae1d942ece4d0c",
+    "workspaceId": "org_xxx",
+    "errorMessage": "Prospect's iMessage not available on +919894486982",
+    "createdAt": "2026-03-12T22:42:22.379Z",
+    "updatedAt": "2026-03-12T22:42:22.962Z"
+  },
+  "leadId": "69b3414e6dae1d942ece4d0c",
+  "lead": { "_id": "69b3414e6dae1d942ece4d0c", "firstName": "Usha", "lastName": "Giridhar", "phone": "+919894486982" },
+  "campaignId": null,
+  "campaignName": null,
+  "ghlContactId": "8LUvKi8KL6oPnjHuUeAG",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null,
+  "data": { "error": "Prospect's iMessage not available on +919894486982" }
 }
 ```
 
 <ResponseField name="event" type="string">`"message.failed"`</ResponseField>
-<ResponseField name="reason" type="string">Human-readable explanation of the failure</ResponseField>
+<ResponseField name="message" type="object">Full message document (includes errorMessage)</ResponseField>
+<ResponseField name="data.error" type="string">Human-readable explanation of the failure</ResponseField>
 
 <Tip>
 When `sendFallbackSmsOnFailed` is enabled (per-message or workspace-level) and
@@ -193,33 +234,48 @@ You don't need to build that logic yourself.
 
 Sent when Tuco determines that the primary channel (e.g. iMessage) is not
 available for this recipient. This is a **business outcome**, not a technical
-failure.
+failure. The **`message`** field is the **full message object**. **`data`** includes `reason` and optionally `checkedAddresses` (string[]).
+
+### Full example body
 
 ```json
 {
   "event": "message.fallback",
-  "messageId": "690d1c95984d3cdcac76e9ff",
-  "status": "fallback",
-  "message": "Hello from Tuco 👋",
-  "messageType": "imessage",
-  "recipientEmail": "user@example.com",
-  "recipientPhone": "+12025551234",
-  "recipientName": "Jane Doe",
-  "leadId": "667f1f77bcf86cd799439012",
-  "workspaceId": "org_123",
-  "createdByUserId": "user_123",
-  "reason": "Prospect's iMessage not available on +12025551234, user@example.com",
-  "checkedAddresses": [
-    "+12025551234",
-    "user@example.com"
-  ],
-  "timestamp": "2025-11-06T22:10:05.864Z"
+  "timestamp": "2026-03-12T22:42:23.000Z",
+  "workspaceId": "org_xxx",
+  "messageId": "69b3414e6dae1d942ece4d0d",
+  "message": {
+    "_id": "69b3414e6dae1d942ece4d0d",
+    "message": "Hi from N8N - mar 13",
+    "messageType": "imessage",
+    "status": "fallback",
+    "recipientPhone": "+919894486982",
+    "recipientName": "Usha Giridhar",
+    "leadId": "69b3414e6dae1d942ece4d0c",
+    "workspaceId": "org_xxx",
+    "errorMessage": "Prospect's iMessage not available on +919894486982",
+    "createdAt": "2026-03-12T22:42:22.379Z",
+    "updatedAt": "2026-03-12T22:42:22.962Z"
+  },
+  "leadId": "69b3414e6dae1d942ece4d0c",
+  "lead": { "_id": "69b3414e6dae1d942ece4d0c", "firstName": "Usha", "lastName": "Giridhar", "phone": "+919894486982" },
+  "campaignId": null,
+  "campaignName": null,
+  "ghlContactId": "8LUvKi8KL6oPnjHuUeAG",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null,
+  "data": {
+    "reason": "Prospect's iMessage not available on +919894486982",
+    "checkedAddresses": ["+919894486982"]
+  }
 }
 ```
 
 <ResponseField name="event" type="string">`"message.fallback"`</ResponseField>
-<ResponseField name="reason" type="string">Human-readable explanation</ResponseField>
-<ResponseField name="checkedAddresses" type="string[]">
+<ResponseField name="message" type="object">Full message document (status fallback)</ResponseField>
+<ResponseField name="data.reason" type="string">Human-readable explanation</ResponseField>
+<ResponseField name="data.checkedAddresses" type="string[]">
   All addresses Tuco checked for iMessage availability before deciding fallback.
   Useful for debugging and auditing.
 </ResponseField>
@@ -239,22 +295,70 @@ failure.
 
 ---
 
+## `message.opened`
+
+Sent when the recipient has **opened/read** the message (read receipt). Fired where the channel supports read receipts. Use it to track engagement or trigger follow-ups.
+
+**Payload:** Same top-level shape as `message.sent`. The **`message`** field is the **full message object** (not a string), including **`readAt`** (ISO 8601 UTC) when the message was read. **`data`** may include `readAt`.
+
+### Full example body
+
+```json
+{
+  "event": "message.opened",
+  "timestamp": "2026-03-13T10:00:00.000Z",
+  "workspaceId": "org_xxx",
+  "messageId": "69b344bc6dae1d942ece4d0e",
+  "message": {
+    "_id": "69b344bc6dae1d942ece4d0e",
+    "message": "Here's your document.",
+    "messageType": "imessage",
+    "status": "sent",
+    "fromLineId": "69ab427ac1feb77d7f46462e",
+    "recipientPhone": "+919042956129",
+    "recipientEmail": "goforbg@icloud.com",
+    "recipientName": "BG Real",
+    "leadId": "69b2c41d352a78479d2c623b",
+    "workspaceId": "org_xxx",
+    "createdByUserId": "user_xxx",
+    "sentAt": "2026-03-12T22:57:02.892Z",
+    "readAt": "2026-03-13T10:00:00.000Z",
+    "createdAt": "2026-03-12T22:57:00.856Z",
+    "updatedAt": "2026-03-13T10:00:00.000Z"
+  },
+  "leadId": "69b2c41d352a78479d2c623b",
+  "lead": { "_id": "69b2c41d352a78479d2c623b", "firstName": "BG", "lastName": "Real", "email": "goforbg@icloud.com", "phone": "+919042956129" },
+  "campaignId": null,
+  "campaignName": null,
+  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null,
+  "data": { "readAt": "2026-03-13T10:00:00.000Z" }
+}
+```
+
+<ResponseField name="event" type="string">`"message.opened"`</ResponseField>
+<ResponseField name="message" type="object">Full message document including **readAt** (ISO UTC when read)</ResponseField>
+<ResponseField name="data.readAt" type="string">When the message was opened (ISO UTC)</ResponseField>
+
+---
+
 ## Shared fields (all events)
 
 Every webhook payload includes these base fields:
 
 | Field | Description |
 |-------|-------------|
-| `event` | Event type (`message.sent`, `message.failed`, `message.fallback`) |
-| `messageId` | Tuco message ID — use as your primary key |
-| `status` | Final status string |
-| `message` | Body text that was sent |
-| `messageType` | `"imessage"`, `"sms"`, or `"email"` |
-| `recipientPhone` / `recipientEmail` / `recipientName` | Where the message went |
-| `leadId` | Lead involved (when known) |
+| `event` | Event type: `message.sent`, `message.failed`, `message.fallback`, `message.opened`, or `message.reply` |
+| `timestamp` | When the webhook was sent (ISO UTC) |
 | `workspaceId` | Your workspace ID |
-| `createdByUserId` | Who created the message |
-| `timestamp` | When this event occurred |
+| `messageId` | Tuco message ID — use as your primary key (for reply, this is the **reply** message ID) |
+| `message` | **For sent/failed/fallback/opened:** full message object. **For reply:** string (reply text only) |
+| `leadId` | Lead involved (when known) |
+| `lead` | Full lead object when available |
+| `ghlContactId`, `ghlLocationId`, `hsPortalId`, `hsContactId` | Integration IDs (nullable) |
+| `data` | Event-specific data (e.g. `reason`, `checkedAddresses` for fallback; `reply`, `repliedAtUtc`, `parentMessages` for reply; `readAt` for opened) |
 
 ---
 
