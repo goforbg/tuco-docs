@@ -54,7 +54,33 @@
             "description": "Message created and sent or queued",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SendMessageResponse" }
+                "schema": { "$ref": "#/components/schemas/SendMessageResponse" },
+                "example": {
+                  "success": true,
+                  "status": "sent",
+                  "leadId": "69b2c41d352a78479d2c623b",
+                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                  "hsPortalId": null,
+                  "hsContactId": null,
+                  "message": {
+                    "_id": "69b344bc6dae1d942ece4d0e",
+                    "message": "Here's your document.",
+                    "messageType": "imessage",
+                    "status": "sent",
+                    "direction": "sent",
+                    "fromLineId": "69ab427ac1feb77d7f46462e",
+                    "recipientPhone": "+919042956129",
+                    "recipientEmail": "goforbg@icloud.com",
+                    "recipientName": "BG Real",
+                    "leadId": "69b2c41d352a78479d2c623b",
+                    "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+                    "createdAt": "2026-03-12T22:57:00.856Z",
+                    "updatedAt": "2026-03-12T22:57:02.892Z",
+                    "sentAt": "2026-03-12T22:57:02.892Z",
+                    "externalMessageId": "5CA93911-F0FE-4D1F-8D8C-1E3495A124F6"
+                  }
+                }
               }
             }
           },
@@ -64,15 +90,30 @@
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SendMessageResponse" },
                 "example": {
-                  "message": { "_id": "...", "message": "Hi", "status": "sent" },
                   "success": true,
+                  "status": "sent",
                   "leadId": "69b2c41d352a78479d2c623b",
                   "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
                   "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                  "hsPortalId": null,
+                  "hsContactId": null,
                   "duplicateOnly": true,
                   "existingLeadIds": ["69b2c41d352a78479d2c623b"],
                   "leadIds": ["69b2c41d352a78479d2c623b"],
-                  "duplicateMessage": "Lead was duplicate; message sent using existing lead."
+                  "duplicateMessage": "Lead was duplicate; message sent using existing lead.",
+                  "message": {
+                    "_id": "69b344bc6dae1d942ece4d0e",
+                    "message": "Hi",
+                    "messageType": "imessage",
+                    "status": "sent",
+                    "fromLineId": "69ab427ac1feb77d7f46462e",
+                    "recipientPhone": "+919042956129",
+                    "leadId": "69b2c41d352a78479d2c623b",
+                    "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+                    "createdAt": "2026-03-12T22:57:00.856Z",
+                    "updatedAt": "2026-03-12T22:57:02.892Z",
+                    "sentAt": "2026-03-12T22:57:02.892Z"
+                  }
                 }
               }
             }
@@ -111,7 +152,7 @@
           "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
           "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
           "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found or access denied" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }
     },
@@ -125,7 +166,29 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateLeadsRequest" }
+              "schema": { "$ref": "#/components/schemas/CreateLeadsRequest" },
+              "examples": {
+                "singleLead": {
+                  "summary": "Single lead (omit listId = Quick Sends)",
+                  "value": {
+                    "leads": [{ "firstName": "John", "lastName": "Doe", "email": "john@example.com", "phone": "+12025551234" }],
+                    "source": "api"
+                  }
+                },
+                "bulkWithList": {
+                  "summary": "Bulk with listId and source",
+                  "value": {
+                    "leads": [
+                      { "firstName": "Jane", "lastName": "Smith", "email": "jane@example.com", "phone": "+12025559999", "companyName": "Acme" },
+                      { "firstName": "Bob", "lastName": "Lee", "email": "bob@example.com", "phone": "+12025558888" }
+                    ],
+                    "listId": "507f1f77bcf86cd799439011",
+                    "source": "gohighlevel",
+                    "defaultCountryCode": "+1",
+                    "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                  }
+                }
+              }
             }
           }
         },
@@ -134,7 +197,21 @@
             "description": "At least one lead created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CreateLeadsResponse" }
+                "schema": { "$ref": "#/components/schemas/CreateLeadsResponse" },
+                "example": {
+                  "message": "Leads saved successfully",
+                  "savedCount": 1,
+                  "duplicateCount": 0,
+                  "totalProcessed": 1,
+                  "listId": "507f1f77bcf86cd799439011",
+                  "leadId": "674a1b2c3d4e5f678901234a",
+                  "leadIds": ["674a1b2c3d4e5f678901234a"],
+                  "leadListIds": ["507f1f77bcf86cd799439011"],
+                  "ghlContactId": null,
+                  "ghlLocationId": null,
+                  "hsPortalId": null,
+                  "hsContactId": null
+                }
               }
             }
           },
@@ -142,7 +219,21 @@
             "description": "All leads were duplicates; existing IDs returned",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CreateLeadsDuplicateResponse" }
+                "schema": { "$ref": "#/components/schemas/CreateLeadsDuplicateResponse" },
+                "example": {
+                  "message": "Lead was a duplicate; existing lead ID returned.",
+                  "duplicateOnly": true,
+                  "duplicateCount": 1,
+                  "totalProcessed": 1,
+                  "leadId": "69b2c41d352a78479d2c623b",
+                  "existingLeadIds": ["69b2c41d352a78479d2c623b"],
+                  "leadIds": ["69b2c41d352a78479d2c623b"],
+                  "duplicates": [{ "input": { "firstName": "BG", "lastName": "Real", "email": "goforbg@icloud.com", "phone": "+919042956129" }, "existingLead": { "_id": "69b2c41d352a78479d2c623b", "firstName": "BG", "lastName": "Real", "email": "goforbg@icloud.com", "phone": "+919042956129" } }],
+                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                  "hsPortalId": null,
+                  "hsContactId": null
+                }
               }
             }
           },
@@ -169,7 +260,25 @@
             "description": "Leads and lists (or single lead when id provided)",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/GetLeadsResponse" }
+                "schema": { "$ref": "#/components/schemas/GetLeadsResponse" },
+                "examples": {
+                  "list": {
+                    "summary": "List with search/pagination",
+                    "value": {
+                      "leads": [
+                        { "_id": "69a2e8e6c580cf046a551fde", "firstName": "Tuco test", "lastName": null, "email": "goforbg@icloud.com", "phone": null, "listId": "69a1fc43a00b806f643082df", "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0", "source": "api", "createdAt": "2026-02-28T13:08:54.421Z", "updatedAt": "2026-02-28T13:08:54.421Z" }
+                      ],
+                      "lists": [{ "_id": "69a1fc43a00b806f643082df", "name": "Quick Sends", "description": "Quick send messages", "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0", "leadCount": 2, "createdAt": "2026-02-27T20:19:15.930Z", "updatedAt": "2026-03-01T22:13:29.337Z" }],
+                      "pagination": { "page": 1, "limit": 50, "totalCount": 1, "totalPages": 1 }
+                    }
+                  },
+                  "single": {
+                    "summary": "Single lead (when id query provided)",
+                    "value": {
+                      "lead": { "_id": "69a2e8e6c580cf046a551fde", "firstName": "Tuco test", "lastName": null, "email": "goforbg@icloud.com", "phone": null, "listId": "69a1fc43a00b806f643082df", "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0", "source": "api", "createdAt": "2026-02-28T13:08:54.421Z", "updatedAt": "2026-02-28T13:08:54.421Z" }
+                    }
+                  }
+                }
               }
             }
           },
@@ -190,6 +299,54 @@
           "503": { "description": "Search timeout", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Search timed out. Try a more specific search or fewer results." } } } },
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
+      },
+      "delete": {
+        "operationId": "deleteLeads",
+        "summary": "Delete one or more leads",
+        "description": "Permanently delete leads from the workspace. List counts and campaign data are updated. Invalid IDs are skipped; deletedCount is the number actually deleted.",
+        "tags": ["Leads"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ids"],
+                "properties": { "ids": { "type": "array", "items": { "type": "string" }, "description": "Lead IDs to delete" } }
+              },
+              "example": { "ids": ["674a1b2c3d4e5f6789012345", "674a1b2c3d4e5f6789012346"] }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "deletedCount": { "type": "integer" } }
+                },
+                "example": { "deletedCount": 2 }
+              }
+            }
+          },
+          "400": {
+            "description": "No ids or invalid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "noIds": { "summary": "No ids provided", "value": { "error": "No ids provided" } },
+                  "invalidId": { "summary": "Invalid lead id in ids array", "value": { "error": "Invalid lead id in ids array" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
       }
     },
     "/api/lines/by-user": {
@@ -203,13 +360,34 @@
             "description": "List of lines",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/GetLinesResponse" }
+                "schema": { "$ref": "#/components/schemas/GetLinesResponse" },
+                "example": {
+                  "lines": [
+                    {
+                      "_id": "699f704bc405fae6ca299a08",
+                      "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0",
+                      "phone": "+16462230920",
+                      "email": "goforlisa@icloud.com",
+                      "firstName": "Lindsey",
+                      "lastName": "Rodriguez",
+                      "isActive": true,
+                      "provisioningStatus": "active",
+                      "lineType": "byon",
+                      "dailyNewConversationsLimit": 20,
+                      "dailyTotalMessagesLimit": 50,
+                      "usage": { "date": "2026-03-01", "newConversationsCount": 4, "totalMessagesCount": 11 },
+                      "healthCheck": { "status": "healthy", "lastCheckedAt": "2026-03-01T20:52:00.097Z" },
+                      "createdAt": "2026-02-25T21:57:31.276Z",
+                      "updatedAt": "2026-03-01T20:52:04.622Z"
+                    }
+                  ]
+                }
               }
             }
           },
           "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }
     },
@@ -232,7 +410,26 @@
             "description": "Replies list",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/GetRepliesResponse" }
+                "schema": { "$ref": "#/components/schemas/GetRepliesResponse" },
+                "example": {
+                  "replies": [
+                    {
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageId": "69b340dd6dae1d942ece4d09",
+                      "respondedAtUtc": "2026-03-12T22:40:29.174Z",
+                      "recipientPhone": "+919042956129",
+                      "recipientEmail": "goforbg@icloud.com",
+                      "name": "BG Real",
+                      "parentMessages": [
+                        { "messageId": "69b344bc6dae1d942ece4d0e", "message": "Here's your document.", "sentAtUtc": "2026-03-12T22:57:02.892Z", "batchId": null, "stepIndex": null }
+                      ]
+                    }
+                  ],
+                  "total": 1,
+                  "page": 1,
+                  "limit": 50,
+                  "totalPages": 1
+                }
               }
             }
           },
@@ -277,7 +474,22 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AddLeadToCampaignRequest" }
+              "schema": { "$ref": "#/components/schemas/AddLeadToCampaignRequest" },
+              "examples": {
+                "byLeadId": { "summary": "Add existing lead by ID", "value": { "leadId": "69b2c41d352a78479d2c623b" } },
+                "newLead": {
+                  "summary": "Create new lead and add to campaign",
+                  "value": {
+                    "lead": {
+                      "firstName": "Jane",
+                      "lastName": "Smith",
+                      "email": "jane@example.com",
+                      "phone": "+12025551234",
+                      "companyName": "Acme Inc"
+                    }
+                  }
+                }
+              }
             }
           }
         },
@@ -286,7 +498,19 @@
             "description": "Lead added and sequence started",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AddLeadToCampaignResponse" }
+                "schema": { "$ref": "#/components/schemas/AddLeadToCampaignResponse" },
+                "example": {
+                  "success": true,
+                  "leadId": "69b2c41d352a78479d2c623b",
+                  "campaignId": "69ab444ac1feb77d7f46462f",
+                  "messageCount": 1,
+                  "message": "Lead added to campaign and sequence started",
+                  "alreadyInCampaign": false,
+                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                  "hsPortalId": null,
+                  "hsContactId": null
+                }
               }
             }
           },
@@ -338,6 +562,114 @@
               }
             }
           },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/leads/check-availability": {
+      "get": {
+        "operationId": "checkLeadAvailability",
+        "summary": "Check iMessage availability for a single lead",
+        "description": "Check if a specific lead is reachable via iMessage. Updates the lead's availability status. Query param `id` = lead ID.",
+        "tags": ["Leads"],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "description": "Lead ID", "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Availability result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "leadId": { "type": "string" },
+                    "available": { "type": "boolean" },
+                    "status": { "type": "string", "enum": ["available", "unavailable", "error"] }
+                  }
+                },
+                "examples": {
+                  "available": { "summary": "iMessage available", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": true, "status": "available" } },
+                  "unavailable": { "summary": "iMessage unavailable", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": false, "status": "unavailable" } }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing id or server not configured",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "idRequired": { "summary": "Lead ID required", "value": { "error": "Lead ID is required" } },
+                  "serverNotConfigured": { "summary": "Availability server not configured", "value": { "error": "Availability check server not configured" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } }
+        }
+      },
+      "post": {
+        "operationId": "bulkCheckAvailability",
+        "summary": "Check iMessage availability (single address or bulk by lead IDs)",
+        "description": "Check one phone/email with `address`, or many leads with `leadIds`. Same logic Tuco uses internally.",
+        "tags": ["Leads"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "address": { "type": "string", "description": "Single phone or email to check (no lead required)" },
+                  "leadIds": { "type": "array", "items": { "type": "string" }, "description": "Lead IDs to check in workspace" }
+                }
+              },
+              "examples": {
+                "singleAddress": { "summary": "Single address", "value": { "address": "+12025551234" } },
+                "bulkLeads": { "summary": "Bulk by lead IDs", "value": { "leadIds": ["667f1f77bcf86cd799439012", "667f1f77bcf86cd799439013"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Single address: { success, available, address }. Bulk: { success, results, ... }",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" },
+                "examples": {
+                  "single": {
+                    "summary": "Single address check",
+                    "value": { "success": true, "available": true, "address": "+12025551234" }
+                  },
+                  "bulk": {
+                    "summary": "Bulk by lead IDs",
+                    "value": {
+                      "success": true,
+                      "results": [
+                        { "leadId": "667f1f77bcf86cd799439012", "available": true },
+                        { "leadId": "667f1f77bcf86cd799439013", "available": false }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing address/leadIds or invalid",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "addressOrLeadIds": { "summary": "address or leadIds required", "value": { "error": "Either address or leadIds is required" } },
+                  "serverNotConfigured": { "summary": "Server not configured", "value": { "error": "Availability check server not configured" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }

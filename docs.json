@@ -93,18 +93,9 @@
             ]
           },
           {
-            "group": "Endpoints (interactive)",
+            "group": "Events & Webhooks",
             "pages": [
-              "api-reference/endpoint/send-message",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/get-replies",
-              "api-reference/endpoint/get-lines",
-              "api-reference/endpoint/campaign-add-lead",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/lead-check-availability",
-              "api-reference/endpoint/bulk-check-availability",
-              "api-reference/endpoint/webhook"
+              "api-reference/message-webhooks"
             ]
           },
           {
@@ -113,12 +104,6 @@
               "api-reference/messages",
               "api-reference/lines",
               "api-reference/leads"
-            ]
-          },
-          {
-            "group": "Events & Webhooks",
-            "pages": [
-              "api-reference/message-webhooks"
             ]
           },
           {
