@@ -87,15 +87,21 @@
         "openapi": "api-reference/openapi.json",
         "groups": [
           {
-            "group": "API Documentation",
+            "group": "Overview",
             "pages": [
               "api-reference/introduction"
             ]
           },
           {
-            "group": "Events & Webhooks",
+            "group": "Webhooks",
             "pages": [
               "api-reference/message-webhooks"
+            ]
+          },
+          {
+            "group": "Errors and status codes",
+            "pages": [
+              "api-reference/errors"
             ]
           },
           {
@@ -104,12 +110,6 @@
               "api-reference/messages",
               "api-reference/lines",
               "api-reference/leads"
-            ]
-          },
-          {
-            "group": "Errors & Limits",
-            "pages": [
-              "api-reference/errors"
             ]
           }
         ]

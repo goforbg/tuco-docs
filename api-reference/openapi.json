@@ -349,120 +349,6 @@
         }
       }
     },
-    "/api/lines/by-user": {
-      "get": {
-        "operationId": "getLines",
-        "summary": "Get all lines",
-        "description": "Returns all lines for the authenticated workspace with usage and health.",
-        "tags": ["Lines"],
-        "responses": {
-          "200": {
-            "description": "List of lines",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/GetLinesResponse" },
-                "example": {
-                  "lines": [
-                    {
-                      "_id": "699f704bc405fae6ca299a08",
-                      "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0",
-                      "phone": "+16462230920",
-                      "email": "goforlisa@icloud.com",
-                      "firstName": "Lindsey",
-                      "lastName": "Rodriguez",
-                      "isActive": true,
-                      "provisioningStatus": "active",
-                      "lineType": "byon",
-                      "dailyNewConversationsLimit": 20,
-                      "dailyTotalMessagesLimit": 50,
-                      "usage": { "date": "2026-03-01", "newConversationsCount": 4, "totalMessagesCount": 11 },
-                      "healthCheck": { "status": "healthy", "lastCheckedAt": "2026-03-01T20:52:00.097Z" },
-                      "createdAt": "2026-02-25T21:57:31.276Z",
-                      "updatedAt": "2026-03-01T20:52:04.622Z"
-                    }
-                  ]
-                }
-              }
-            }
-          },
-          "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
-        }
-      }
-    },
-    "/api/replies": {
-      "get": {
-        "operationId": "getReplies",
-        "summary": "Check replies for a lead (or campaign)",
-        "description": "Returns leads who have replied. Filter by `leadId`, `campaignId`, `recipientEmail`, or `recipientPhone`. Paginated.",
-        "tags": ["Replies"],
-        "parameters": [
-          { "name": "leadId", "in": "query", "description": "Replies from this lead only", "schema": { "type": "string" } },
-          { "name": "campaignId", "in": "query", "description": "Replies from leads in this campaign", "schema": { "type": "string" } },
-          { "name": "recipientEmail", "in": "query", "schema": { "type": "string" } },
-          { "name": "recipientPhone", "in": "query", "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Replies list",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/GetRepliesResponse" },
-                "example": {
-                  "replies": [
-                    {
-                      "leadId": "69b2c41d352a78479d2c623b",
-                      "messageId": "69b340dd6dae1d942ece4d09",
-                      "respondedAtUtc": "2026-03-12T22:40:29.174Z",
-                      "recipientPhone": "+919042956129",
-                      "recipientEmail": "goforbg@icloud.com",
-                      "name": "BG Real",
-                      "parentMessages": [
-                        { "messageId": "69b344bc6dae1d942ece4d0e", "message": "Here's your document.", "sentAtUtc": "2026-03-12T22:57:02.892Z", "batchId": null, "stepIndex": null }
-                      ]
-                    }
-                  ],
-                  "total": 1,
-                  "page": 1,
-                  "limit": 50,
-                  "totalPages": 1
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid leadId or campaignId",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-                "examples": {
-                  "invalidLeadId": { "summary": "Invalid leadId", "value": { "error": "Invalid leadId" } },
-                  "invalidCampaignId": { "summary": "Invalid campaignId", "value": { "error": "Invalid campaignId" } },
-                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
-                }
-              }
-            }
-          },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
-          "404": {
-            "description": "Lead or campaign not found",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-                "examples": {
-                  "leadNotFound": { "summary": "Lead not found", "value": { "error": "Lead not found or access denied" } },
-                  "campaignNotFound": { "summary": "Campaign not found", "value": { "error": "Campaign not found" } }
-                }
-              }
-            }
-          },
-          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Failed to fetch replies" } } } }
-        }
-      }
-    },
     "/api/campaigns/{id}/leads": {
       "post": {
         "operationId": "addLeadToCampaign",
@@ -562,6 +448,120 @@
               }
             }
           },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/replies": {
+      "get": {
+        "operationId": "getReplies",
+        "summary": "Check replies for a lead (or campaign)",
+        "description": "Returns leads who have replied. Filter by `leadId`, `campaignId`, `recipientEmail`, or `recipientPhone`. Paginated.",
+        "tags": ["Replies"],
+        "parameters": [
+          { "name": "leadId", "in": "query", "description": "Replies from this lead only", "schema": { "type": "string" } },
+          { "name": "campaignId", "in": "query", "description": "Replies from leads in this campaign", "schema": { "type": "string" } },
+          { "name": "recipientEmail", "in": "query", "schema": { "type": "string" } },
+          { "name": "recipientPhone", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replies list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetRepliesResponse" },
+                "example": {
+                  "replies": [
+                    {
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageId": "69b340dd6dae1d942ece4d09",
+                      "respondedAtUtc": "2026-03-12T22:40:29.174Z",
+                      "recipientPhone": "+919042956129",
+                      "recipientEmail": "goforbg@icloud.com",
+                      "name": "BG Real",
+                      "parentMessages": [
+                        { "messageId": "69b344bc6dae1d942ece4d0e", "message": "Here's your document.", "sentAtUtc": "2026-03-12T22:57:02.892Z", "batchId": null, "stepIndex": null }
+                      ]
+                    }
+                  ],
+                  "total": 1,
+                  "page": 1,
+                  "limit": 50,
+                  "totalPages": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid leadId or campaignId",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalidLeadId": { "summary": "Invalid leadId", "value": { "error": "Invalid leadId" } },
+                  "invalidCampaignId": { "summary": "Invalid campaignId", "value": { "error": "Invalid campaignId" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": {
+            "description": "Lead or campaign not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "leadNotFound": { "summary": "Lead not found", "value": { "error": "Lead not found or access denied" } },
+                  "campaignNotFound": { "summary": "Campaign not found", "value": { "error": "Campaign not found" } }
+                }
+              }
+            }
+          },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Failed to fetch replies" } } } }
+        }
+      }
+    },
+    "/api/lines/by-user": {
+      "get": {
+        "operationId": "getLines",
+        "summary": "Get all lines",
+        "description": "Returns all lines for the authenticated workspace with usage and health.",
+        "tags": ["Lines"],
+        "responses": {
+          "200": {
+            "description": "List of lines",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GetLinesResponse" },
+                "example": {
+                  "lines": [
+                    {
+                      "_id": "699f704bc405fae6ca299a08",
+                      "workspaceId": "org_3ABCDbdGyF6w99hikyVN4cmo6H0",
+                      "phone": "+16462230920",
+                      "email": "goforlisa@icloud.com",
+                      "firstName": "Lindsey",
+                      "lastName": "Rodriguez",
+                      "isActive": true,
+                      "provisioningStatus": "active",
+                      "lineType": "byon",
+                      "dailyNewConversationsLimit": 20,
+                      "dailyTotalMessagesLimit": 50,
+                      "usage": { "date": "2026-03-01", "newConversationsCount": 4, "totalMessagesCount": 11 },
+                      "healthCheck": { "status": "healthy", "lastCheckedAt": "2026-03-01T20:52:00.097Z" },
+                      "createdAt": "2026-02-25T21:57:31.276Z",
+                      "updatedAt": "2026-03-01T20:52:04.622Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }
