@@ -117,15 +117,17 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 
 <CodeGroup>
 
-```bash Minimal (defaults to iMessage)
+```bash Minimal using leadId (defaults to iMessage)
 curl -X POST "https://app.tuco.ai/api/messages" \
   -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "Hi, this is a test from Tuco.",
-    "recipientPhone": "+12025551234"
+    "leadId": "667f1f77bcf86cd799439012"
   }'
 ```
+
+Need a `leadId` first? Create one with [`POST /api/leads`](https://docs.tuco.ai/api-reference/leads/create-or-import-leads), then use the returned `leadId` in this request.
 
 ```bash With alt contacts + time window
 curl -X POST "https://app.tuco.ai/api/messages" \
