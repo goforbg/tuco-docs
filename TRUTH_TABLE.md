@@ -52,7 +52,7 @@ This table aligns the **Mintlify docs** and **OpenAPI** with the **real app APIs
 | Item | N8N / Before | Real API (app) | Docs / OpenAPI now |
 |------|----------------|----------------|---------------------|
 | **Auth** | Bearer | authenticateRequest | OpenAPI + get-lines.mdx |
-| **Response** | { lines: [...] } with usage, healthCheck | sanitizeLineForFrontend + usage + healthCheck | OpenAPI GetLinesResponse + get-lines.mdx |
+| **Response** | `{ lines: [...] }` with usage, healthCheck | sanitizeLineForFrontend + usage + healthCheck | OpenAPI GetLinesResponse + get-lines.mdx |
 | **Doc page** | Only in lines.mdx (overview) | — | New endpoint page get-lines.mdx + OpenAPI path |
 
 ---
@@ -61,10 +61,10 @@ This table aligns the **Mintlify docs** and **OpenAPI** with the **real app APIs
 
 | Item | N8N / Before | Real API (app) | Docs / OpenAPI now |
 |------|----------------|----------------|---------------------|
-| **Query: id** | Not in old OpenAPI | Single lead by ID → { lead } | OpenAPI GET /api/leads params + GetLeadsResponse oneOf |
+| **Query: id** | Not in old OpenAPI | Single lead by ID -> `{ lead }` | OpenAPI GET /api/leads params + GetLeadsResponse oneOf |
 | **Query: search, listId, page, limit** | In N8N (search=goforbg) | Supported | OpenAPI params + get.mdx |
 | **Response (list)** | leads, lists, pagination | Same | OpenAPI + get.mdx |
-| **Response (single)** | — | { lead: leadJson } | OpenAPI oneOf |
+| **Response (single)** | — | `{ lead: leadJson }` | OpenAPI oneOf |
 | **Error 503** | — | Search timeout | OpenAPI 503 |
 
 ---
@@ -117,7 +117,7 @@ This table aligns the **Mintlify docs** and **OpenAPI** with the **real app APIs
 | POST /api/messages | message not required when attachmentUrls present; attachmentUrls, attachmentNames added | leadId, ghlContactId, ghlLocationId, hsPortalId, hsContactId, reason, scheduledDate, duplicateOnly, existingLeadIds, leadIds, duplicateMessage, error; 200 for duplicate |
 | POST /api/leads | listId optional; body alias for leads; ghlLocationId | leadId, leadListIds, ghlContactId, ghlLocationId, hsPortalId, hsContactId; 200 + duplicateOnly when all duplicates |
 | POST /api/campaigns/{id}/leads | lead object for create-and-add | ghlContactId, ghlLocationId, hsPortalId, hsContactId; 200 + alreadyInCampaign |
-| GET /api/leads | id for single lead | Single: { lead }; list: leads, lists, pagination; 503 on timeout |
+| GET /api/leads | id for single lead | Single: `{ lead }`; list: leads, lists, pagination; 503 on timeout |
 | GET /api/lines/by-user | — | lines[] with usage, healthCheck (no sensitive fields) |
 | GET /api/replies | leadId, campaignId, recipientEmail, recipientPhone, page, limit | replies[], total, page, limit, totalPages; each reply shape as in webhook data.reply |
 

@@ -21,7 +21,7 @@
       "post": {
         "operationId": "sendMessage",
         "summary": "Send iMessage / SMS / Email",
-        "description": "Send one message to a recipient. Use `leadId` or `recipientPhone`/`recipientEmail`. Tuco round-robins lines when `fromLineId` is omitted. Either `message` or `attachmentUrls` (or both) is required.",
+        "description": "Send one message to an existing lead. Create/import the lead first via `POST /api/leads`, then send using `leadId`. Tuco round-robins lines when `fromLineId` is omitted. Either `message` or `attachmentUrls` (or both) is required.",
         "tags": ["Messages"],
         "requestBody": {
           "required": true,
@@ -30,12 +30,26 @@
               "schema": { "$ref": "#/components/schemas/SendMessageRequest" },
               "examples": {
                 "minimal": {
-                  "summary": "Minimal (iMessage)",
-                  "value": { "message": "Hi from Tuco.", "recipientPhone": "+12025551234" }
+                  "summary": "Minimal (iMessage using leadId)",
+                  "value": { "message": "Hi from Tuco.", "leadId": "674a1b2c3d4e5f6789012345" }
                 },
-                "withLead": {
-                  "summary": "Send to existing lead",
-                  "value": { "message": "Following up.", "leadId": "674a1b2c3d4e5f6789012345" }
+                "hubspotLead": {
+                  "summary": "HubSpot lead",
+                  "value": {
+                    "message": "Hi from Tuco.",
+                    "leadId": "674a1b2c3d4e5f6789012346",
+                    "hsContactId": "120001",
+                    "hsPortalId": "991001"
+                  }
+                },
+                "ghlLead": {
+                  "summary": "GHL lead",
+                  "value": {
+                    "message": "Hi from Tuco.",
+                    "leadId": "674a1b2c3d4e5f6789012347",
+                    "ghlContactId": "ghl_contact_001",
+                    "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                  }
                 },
                 "withAttachments": {
                   "summary": "With attachments (max 2)",
@@ -55,30 +69,55 @@
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/SendMessageResponse" },
-                "example": {
-                  "success": true,
-                  "status": "sent",
-                  "leadId": "69b2c41d352a78479d2c623b",
-                  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
-                  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
-                  "hsPortalId": null,
-                  "hsContactId": null,
-                  "message": {
-                    "_id": "69b344bc6dae1d942ece4d0e",
-                    "message": "Here's your document.",
-                    "messageType": "imessage",
-                    "status": "sent",
-                    "direction": "sent",
-                    "fromLineId": "69ab427ac1feb77d7f46462e",
-                    "recipientPhone": "+919042956129",
-                    "recipientEmail": "goforbg@icloud.com",
-                    "recipientName": "BG Real",
-                    "leadId": "69b2c41d352a78479d2c623b",
-                    "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
-                    "createdAt": "2026-03-12T22:57:00.856Z",
-                    "updatedAt": "2026-03-12T22:57:02.892Z",
-                    "sentAt": "2026-03-12T22:57:02.892Z",
-                    "externalMessageId": "5CA93911-F0FE-4D1F-8D8C-1E3495A124F6"
+                "examples": {
+                  "minimalSent": {
+                    "summary": "Minimal leadId send",
+                    "value": {
+                      "success": true,
+                      "status": "sent",
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "ghlContactId": null,
+                      "ghlLocationId": null,
+                      "hsPortalId": null,
+                      "hsContactId": null,
+                      "message": {
+                        "_id": "69b344bc6dae1d942ece4d0e",
+                        "message": "Hi from Tuco.",
+                        "messageType": "imessage",
+                        "status": "sent",
+                        "direction": "sent",
+                        "fromLineId": "69ab427ac1feb77d7f46462e",
+                        "leadId": "69b2c41d352a78479d2c623b",
+                        "workspaceId": "org_3AZs4H8UsfFxVFONr6H4K75okaG",
+                        "createdAt": "2026-03-12T22:57:00.856Z",
+                        "updatedAt": "2026-03-12T22:57:02.892Z",
+                        "sentAt": "2026-03-12T22:57:02.892Z"
+                      }
+                    }
+                  },
+                  "hubspotLeadSent": {
+                    "summary": "HubSpot lead send",
+                    "value": {
+                      "success": true,
+                      "status": "sent",
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "ghlContactId": null,
+                      "ghlLocationId": null,
+                      "hsPortalId": "991001",
+                      "hsContactId": "120001"
+                    }
+                  },
+                  "ghlLeadSent": {
+                    "summary": "GHL lead send",
+                    "value": {
+                      "success": true,
+                      "status": "sent",
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "ghlContactId": "ghl_contact_001",
+                      "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+                      "hsPortalId": null,
+                      "hsContactId": null
+                    }
                   }
                 }
               }
@@ -185,6 +224,51 @@
                     "listId": "507f1f77bcf86cd799439011",
                     "source": "gohighlevel",
                     "defaultCountryCode": "+1",
+                    "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                  }
+                },
+                "bulkWithHubSpotContactIds": {
+                  "summary": "Multiple leads with HubSpot contact IDs",
+                  "value": {
+                    "leads": [
+                      {
+                        "firstName": "Ava",
+                        "lastName": "Stone",
+                        "email": "ava@example.com",
+                        "phone": "+12025550111",
+                        "hsContactId": "120001"
+                      },
+                      {
+                        "firstName": "Noah",
+                        "lastName": "Reed",
+                        "email": "noah@example.com",
+                        "phone": "+12025550112",
+                        "hsContactId": "120002"
+                      }
+                    ],
+                    "source": "hubspot"
+                  }
+                },
+                "bulkWithGhlContactIds": {
+                  "summary": "Multiple leads with GHL contact IDs",
+                  "value": {
+                    "leads": [
+                      {
+                        "firstName": "Mia",
+                        "lastName": "Cole",
+                        "email": "mia@example.com",
+                        "phone": "+12025550121",
+                        "ghlContactId": "ghl_contact_001"
+                      },
+                      {
+                        "firstName": "Liam",
+                        "lastName": "Bennett",
+                        "email": "liam@example.com",
+                        "phone": "+12025550122",
+                        "ghlContactId": "ghl_contact_002"
+                      }
+                    ],
+                    "source": "gohighlevel",
                     "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
                   }
                 }
@@ -709,7 +793,11 @@
           "sendFallbackSmsOnFailed": { "type": "boolean", "default": false },
           "batchId": { "type": "string" },
           "attachmentUrls": { "type": "array", "items": { "type": "string", "format": "uri" }, "maxItems": 2 },
-          "attachmentNames": { "type": "array", "items": { "type": "string" } }
+          "attachmentNames": { "type": "array", "items": { "type": "string" } },
+          "ghlContactId": { "type": "string" },
+          "ghlLocationId": { "type": "string" },
+          "hsContactId": { "type": "string" },
+          "hsPortalId": { "type": "string" }
         }
       },
       "SendMessageResponse": {
@@ -772,7 +860,10 @@
                 "jobTitle": { "type": "string" },
                 "notes": { "type": "string" },
                 "customFields": { "type": "object" },
-                "externalId": { "type": "string" }
+                "externalId": { "type": "string" },
+                "hsContactId": { "type": "string" },
+                "ghlContactId": { "type": "string" },
+                "ghlLocationId": { "type": "string" }
               }
             }
           },

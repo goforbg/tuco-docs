@@ -115,6 +115,8 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 
 ## Examples
 
+Create or import a lead first using [`POST /api/leads`](https://docs.tuco.ai/api-reference/leads/create-or-import-leads), then send using `leadId` as shown below.
+
 <CodeGroup>
 
 ```bash Minimal using leadId (defaults to iMessage)
@@ -129,71 +131,39 @@ curl -X POST "https://app.tuco.ai/api/messages" \
 
 Need a `leadId` first? Create one with [`POST /api/leads`](https://docs.tuco.ai/api-reference/leads/create-or-import-leads), then use the returned `leadId` in this request.
 
-```bash With alt contacts + time window
+```bash HubSpot lead
 curl -X POST "https://app.tuco.ai/api/messages" \
   -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "Hey {{firstName}}, quick question about next week.",
-    "recipientPhone": "+12025551234",
-    "altPhone1": "+12025559876",
-    "altEmail1": "prospect@icloud.com",
-    "timezone": "America/New_York",
-    "sendWindowStart": "09:00",
-    "sendWindowEnd": "17:00",
-    "allowedDaysOfWeek": [1, 2, 3, 4, 5]
+    "message": "Hi from Tuco.",
+    "leadId": "667f1f77bcf86cd799439013",
+    "hsContactId": "120001",
+    "hsPortalId": "991001"
   }'
 ```
 
-```bash Send to existing lead
+```bash GHL lead
 curl -X POST "https://app.tuco.ai/api/messages" \
   -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "Following up on our conversation.",
-    "leadId": "667f1f77bcf86cd799439012"
+    "message": "Hi from Tuco.",
+    "leadId": "667f1f77bcf86cd799439014",
+    "ghlContactId": "ghl_contact_001",
+    "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
   }'
 ```
 
-```bash Scheduled + fallback SMS on failure
+```bash With attachments
 curl -X POST "https://app.tuco.ai/api/messages" \
   -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "Reminder: your appointment is tomorrow at 2pm.",
-    "recipientPhone": "+12025551234",
-    "scheduledDate": "2025-10-15T14:30:00Z",
-    "sendFallbackSmsOnFailed": true
+    "message": "Here is the file.",
+    "leadId": "667f1f77bcf86cd799439012",
+    "attachmentUrls": ["https://example.com/doc.pdf"]
   }'
-```
-
-```python Python (requests)
-import requests
-
-resp = requests.post(
-    "https://app.tuco.ai/api/messages",
-    headers={"Authorization": "Bearer tuco_sk_xxxxxxxxxxxxx"},
-    json={
-        "message": "Hi, this is a test from Tuco.",
-        "recipientPhone": "+12025551234",
-    },
-)
-print(resp.status_code, resp.json())
-```
-
-```javascript Node.js (fetch)
-const resp = await fetch("https://app.tuco.ai/api/messages", {
-  method: "POST",
-  headers: {
-    Authorization: "Bearer tuco_sk_xxxxxxxxxxxxx",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    message: "Hi, this is a test from Tuco.",
-    recipientPhone: "+12025551234",
-  }),
-});
-console.log(resp.status, await resp.json());
 ```
 
 </CodeGroup>
