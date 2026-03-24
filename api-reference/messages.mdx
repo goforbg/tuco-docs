@@ -56,7 +56,7 @@ messages. Same recipient = same thread.
   <ResponseField name="sentAt" type="string">When actually sent</ResponseField>
   <ResponseField name="deliveredAt" type="string">When delivery confirmed via device callback</ResponseField>
   <ResponseField name="readAt" type="string">When read (incoming messages only)</ResponseField>
-  <ResponseField name="externalMessageId" type="string">BlueBubbles / provider ID</ResponseField>
+  <ResponseField name="externalMessageId" type="string">device message ID</ResponseField>
 </Accordion>
 
 <Accordion title="Error & fallback fields">
@@ -97,7 +97,7 @@ queued → pending → sending → sent → delivered
 | **queued** | Not yet picked for send (waiting for line limits, time window, device gap, or contact gap) |
 | **pending** | Assigned to a line, worker is processing |
 | **sending** | Worker is actively sending (prevents duplicate sends) |
-| **sent** | Accepted by the provider (BlueBubbles / Twilio) |
+| **sent** | Accepted by the provider (iMessage relay / Twilio) |
 | **delivered** | Delivery confirmed via device callback (can come later) |
 | **failed** | Technical send failure after all retries, or availability API error |
 | **fallback** | Availability check determined recipient has no iMessage |
@@ -137,7 +137,7 @@ or `individual.message.gap_not_met`.
 
 | Context | Send attempts | Verification between attempts | Gap | Env vars |
 |---------|---------------|-------------------------------|-----|----------|
-| **Individual** (API / Unibox) | **5** | `outgoing_messages` + BlueBubbles `message/query` (poll up to 90s) | 60s | `UNIBOX_REPLY_RETRY_*` |
+| **Individual** (API / Unibox) | **5** | `outgoing_messages` + device gateway `message/query` (poll up to 90s) | 60s | `UNIBOX_REPLY_RETRY_*` |
 | **App sync fallback** | **3** | Same as individual | 30s | `SYNC_FALLBACK_RETRY_*` |
 | **Campaign** | **1** per line; step 0 tries other lines | — | — | — |
 
