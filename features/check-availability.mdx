@@ -68,7 +68,8 @@ Check multiple leads at once:
 
 <Note>
 Bulk checking is processed sequentially. Large batches may take a few minutes.
-The API is rate-limited to **200 requests per minute** per workspace.
+Each line can perform up to **70 availability checks per day**. If you have multiple lines,
+checks are distributed across them automatically. High-volume checks may experience slight delays.
 </Note>
 
 ---

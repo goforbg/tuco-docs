@@ -171,7 +171,7 @@ a limit:
 
 | Endpoint group | Limit |
 |---|---|
-| **Check iMessage availability** (`/api/check-availability`, `/api/leads/check-availability`) | 200 req/min |
+| **Check iMessage availability** (`/api/check-availability`, `/api/leads/check-availability`) | 70 checks/day per line; high-volume checks may experience slight delays |
 | **Send message** (`/api/messages`, `/api/leads/send`) | 60 req/min |
 | **Unibox reply** (`/api/unibox/send-reply`) | 30 req/min |
 | **Create campaign** (`/api/campaigns`) | 200 req/min |
@@ -179,6 +179,12 @@ a limit:
 | **Fallback SMS** (`/api/fallback-sms`) | 200 req/min |
 
 All limits are per workspace (organization), regardless of how many API keys or users are calling the endpoint.
+
+<Note>
+**Availability checks:** Each line in your workspace can perform up to 70 availability checks per day.
+If you have multiple lines, your total daily capacity is higher. When all lines are exhausted for the day,
+you receive a `429` response. High-volume checks may experience slight delays to ensure accuracy.
+</Note>
 
 <Tip>
 For high-volume sends, use campaigns instead of individual API calls. Campaigns
