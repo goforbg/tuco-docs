@@ -26,7 +26,11 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 </ParamField>
 
 <ParamField body="attachmentUrls" type="string[]">
-  Optional array of URLs (max 2). When provided, `message` can be empty. Supported: public URLs and UploadThing/Blob URLs that belong to your workspace.
+  Optional array of URLs (max 2, max 25 MB each). When provided, `message` can be empty. Supported formats: images (PNG, JPG, GIF, WebP, HEIC), video (MP4, MOV), audio (CAF), and PDF. Supported sources: any public URL, UploadThing/Blob URLs that belong to your workspace.
+
+  <Tip>
+  Sending the same attachment URL repeatedly (e.g. a promo video in an automation)? Tuco caches attachments per line — the second send skips the download and upload, making it significantly faster.
+  </Tip>
 </ParamField>
 
 <ParamField body="recipientPhone" type="string">

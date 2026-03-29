@@ -166,10 +166,22 @@ Tuco applies per-workspace rate limits to protect the platform. When you hit
 a limit:
 
 - You receive a `429` response.
-- The `Retry-After` header (when present) tells you how long to wait.
-- No data is modified.
+- The `Retry-After` header tells you how many seconds to wait before retrying.
+- No data is modified — safe to retry.
+
+| Endpoint group | Limit |
+|---|---|
+| **Check iMessage availability** (`/api/check-availability`, `/api/leads/check-availability`) | 200 req/min |
+| **Send message** (`/api/messages`, `/api/leads/send`) | 60 req/min |
+| **Unibox reply** (`/api/unibox/send-reply`) | 30 req/min |
+| **Create campaign** (`/api/campaigns`) | 200 req/min |
+| **Get replies** (`/api/replies`) | 120 req/min |
+| **Fallback SMS** (`/api/fallback-sms`) | 200 req/min |
+
+All limits are per workspace (organization), regardless of how many API keys or users are calling the endpoint.
 
 <Tip>
 For high-volume sends, use campaigns instead of individual API calls. Campaigns
-handle pacing, line rotation, and retry logic automatically.
+handle pacing, line rotation, and retry logic automatically — and are not subject
+to per-request rate limits.
 </Tip>
