@@ -35,6 +35,10 @@ delivery is confirmed on the recipient's device.
 
 Sent when a new reply from a lead or contact is recorded. Use it to update your CRM, trigger automations, or log conversations.
 
+<Info>
+When a contact owner is set (`contactOwnerEmail`), reply email notifications are routed only to the contact owner rather than all workspace users.
+</Info>
+
 **Payload shape:** Top-level flat fields; **`data.reply`** is **identical** to one item in **GET /api/replies** (same keys, same types). Reply text is top-level **`message`** (string). **`parentMessages`** is always present (array; possibly empty).
 
 ### Top-level fields
@@ -357,6 +361,7 @@ Every webhook payload includes these base fields:
 | `message` | **For sent/failed/fallback/opened:** full message object. **For reply:** string (reply text only) |
 | `leadId` | Lead involved (when known) |
 | `lead` | Full lead object when available |
+| `contactOwnerEmail` | Email of the workspace user assigned as contact owner for this lead. May be `null` for legacy leads. |
 | `ghlContactId`, `ghlLocationId`, `hsPortalId`, `hsContactId` | Integration IDs (nullable) |
 | `data` | Event-specific data (e.g. `reason`, `checkedAddresses` for fallback; `reply`, `repliedAtUtc`, `parentMessages` for reply; `readAt` for opened) |
 

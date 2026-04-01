@@ -64,6 +64,10 @@ Your CSV must include these **required fields**:
   Additional notes or context
 </ParamField>
 
+<ParamField path="contactOwnerEmail" type="string">
+  Email of the workspace user to assign as owner. Must match a user in your workspace. Invalid or missing values default to the first workspace user.
+</ParamField>
+
 <Info>
 Any additional columns will be stored as **custom fields**.
 </Info>
@@ -239,6 +243,7 @@ POST /api/leads
       "phone": "+12025551234",
       "companyName": "Acme Corp",
       "jobTitle": "CEO",
+      "contactOwnerEmail": "rep@yourcompany.com",
       "customFields": {
         "industry": "Technology",
         "revenue": "1M-5M"

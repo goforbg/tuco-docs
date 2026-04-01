@@ -94,6 +94,7 @@ You can expect to see:
 
 - A unique identifier you can store in your own systems.
 - Core profile fields such as names and primary contact details.
+- `contactOwnerEmail` — the email of the workspace user assigned as contact owner. May be `null` for legacy leads or when no owner is explicitly set (defaults to the first workspace user).
 - Simple status indicators that match what you see in the Tuco UI.
 
 If a request is declined, Tuco clearly reports that no new lead was created or changed.
@@ -133,6 +134,7 @@ Both single and bulk uploads use the same endpoint.
       "companyName": "Acme Corp",
       "jobTitle": "CEO",
       "notes": "Warm intro from Sarah",
+      "contactOwnerEmail": "rep@yourcompany.com",
       "customFields": {
         "industry": "Technology",
         "segment": "Mid-market"
@@ -149,6 +151,7 @@ Both single and bulk uploads use the same endpoint.
 - `listId` – Tuco list that should own these leads.
 - `source` – optional label for where the leads came from.
 - `defaultCountryCode` – used to normalize phone numbers when no country code is present.
+- `contactOwnerEmail` – Email of the workspace user who owns this contact. If omitted or invalid, defaults to the first user in the workspace.
 
 ### Response
 

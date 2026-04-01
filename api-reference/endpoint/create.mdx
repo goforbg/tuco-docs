@@ -26,6 +26,7 @@ This endpoint is used both for creating a single lead and for bulk uploads (mult
       "companyName": "Acme Corp",
       "jobTitle": "CEO",
       "notes": "Warm intro from Sarah",
+      "contactOwnerEmail": "rep@yourcompany.com",
       "customFields": {
         "industry": "Technology",
         "segment": "Mid-market"
@@ -42,7 +43,8 @@ This endpoint is used both for creating a single lead and for bulk uploads (mult
 - `listId` – **Optional.** Tuco list that should own these leads. Omit to use the **Quick Sends** list.  
 - `source` – optional origin label (for example, `"api"` or `"gohighlevel"`).  
 - `defaultCountryCode` – used to normalize phone numbers when no country code is present.  
-- `ghlLocationId` – optional; used when syncing with GoHighLevel.  
+- `ghlLocationId` – optional; used when syncing with GoHighLevel.
+- `contactOwnerEmail` – Email of the workspace user who owns this contact. If omitted or invalid, defaults to the first user in the workspace.
 - You may send `body` as an alias for `leads` (same array shape).
 
 ---
