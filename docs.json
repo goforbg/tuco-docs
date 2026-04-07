@@ -109,7 +109,8 @@
             "pages": [
               "api-reference/messages",
               "api-reference/lines",
-              "api-reference/leads"
+              "api-reference/leads",
+              "api-reference/endpoint/check-availability-rr"
             ]
           }
         ]

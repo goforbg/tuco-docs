@@ -275,21 +275,52 @@ POST /api/leads/check-availability
 
 ---
 
+## API Integrators: Skip Checking, Use Fallback Webhooks
+
+<Warning>
+If you're integrating via API (not using the Tuco UI), the **recommended pattern**
+is to skip availability checking entirely:
+
+1. Call `POST /api/messages` directly
+2. Listen for the `message.fallback` webhook
+3. When you receive `message.fallback`, trigger your SMS/WhatsApp fallback
+
+This avoids burning your 70/day/line availability quota and is faster (one API call
+instead of two). See the [check-availability-rr endpoint](/api-reference/endpoint/check-availability-rr#recommended-pattern-send--fallback-webhook) for code examples.
+</Warning>
+
+---
+
+## Availability Checks vs Send Limits
+
+<Note>
+Availability checks and message sends use **separate** daily counters.
+Checking a number does **not** reduce your daily send quota, and sending a
+message does **not** reduce your availability check quota.
+</Note>
+
+| Counter | Scope | Limit |
+|---------|-------|-------|
+| **Send quota** | Per line, per day | Configured per line (see Lines page) |
+| **Availability quota** | Per line, per day | **70 checks/day** (hard cap) |
+
+---
+
 ## Best Practices
 
 <AccordionGroup>
   <Accordion title="🔄 Regular Re-checks" icon="rotate">
     Re-check leads periodically (weekly/monthly) as people change devices and enable/disable iMessage
   </Accordion>
-  
+
   <Accordion title="⚡ Bulk for Efficiency" icon="bolt">
     Use bulk checking for large lists to save time and ensure all leads are current
   </Accordion>
-  
+
   <Accordion title="✅ Check Before Campaigns" icon="circle-check">
     Always verify availability before launching messaging campaigns to maximize deliverability
   </Accordion>
-  
+
   <Accordion title="📊 Monitor Error Rates" icon="chart-line">
     If you see high error rates, verify your line configuration and server URL
   </Accordion>
