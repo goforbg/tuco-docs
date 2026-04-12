@@ -95,7 +95,14 @@
           {
             "group": "Webhooks",
             "pages": [
-              "api-reference/message-webhooks"
+              "api-reference/endpoint/webhook",
+              "api-reference/message-webhooks",
+              "api-reference/endpoint/list-webhooks",
+              "api-reference/endpoint/create-webhook",
+              "api-reference/endpoint/get-webhook",
+              "api-reference/endpoint/update-webhook",
+              "api-reference/endpoint/delete-webhook",
+              "api-reference/endpoint/test-webhook"
             ]
           },
           {

@@ -1,0 +1,114 @@
+---
+title: "Create Webhook"
+api: "POST /api/webhooks"
+description: "Register a new webhook endpoint — the signing secret is returned once"
+---
+
+Register a URL to receive real-time event notifications. The HMAC signing secret is returned **once** in the response. Save it immediately — you can't retrieve it later.
+
+## Authentication
+
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+---
+
+## Request body
+
+<ParamField body="url" type="string" required>
+  HTTPS endpoint URL that will receive webhook POSTs.
+</ParamField>
+
+<ParamField body="events" type="string[]" required>
+  Event types to subscribe to. At least one required.
+
+  | Event | When fired |
+  |-------|-----------|
+  | `message.sent` | Message accepted by Tuco |
+  | `message.failed` | Message failed after retries |
+  | `message.fallback` | Recipient has no iMessage |
+  | `message.reply` | Lead replied |
+  | `message.opened` | Message read (read receipt) |
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  User-friendly name for this webhook.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional description.
+</ParamField>
+
+---
+
+## Response
+
+<ResponseField name="id" type="string">Webhook ID</ResponseField>
+<ResponseField name="secret" type="string">
+  HMAC-SHA256 signing secret. **Shown once.** Use this to verify `X-Tuco-Signature` on incoming webhooks.
+</ResponseField>
+<ResponseField name="url" type="string">Endpoint URL</ResponseField>
+<ResponseField name="events" type="string[]">Subscribed events</ResponseField>
+<ResponseField name="name" type="string">Webhook name</ResponseField>
+<ResponseField name="createdAt" type="string">Creation timestamp (ISO UTC)</ResponseField>
+<ResponseField name="warning" type="string">Reminder to save the secret</ResponseField>
+
+---
+
+## Examples
+
+<CodeGroup>
+
+```bash All events
+curl -X POST "https://app.tuco.ai/api/webhooks" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/tuco",
+    "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+    "name": "Production webhook"
+  }'
+```
+
+```bash Replies only
+curl -X POST "https://app.tuco.ai/api/webhooks" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/webhooks/replies",
+    "events": ["message.reply"],
+    "name": "Reply listener",
+    "description": "Forwards replies to Slack"
+  }'
+```
+
+</CodeGroup>
+
+```json 201 Response
+{
+  "id": "680a1b2c3d4e5f6789012345",
+  "secret": "dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQ=",
+  "url": "https://example.com/webhooks/tuco",
+  "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+  "name": "Production webhook",
+  "description": null,
+  "createdAt": "2026-04-12T12:00:00.000Z",
+  "warning": "Save this secret now. You will not be able to see it again."
+}
+```
+
+<Warning>
+Copy the `secret` from the response and store it securely (e.g. environment variable).
+This is the **only time** it's returned. If you lose it, delete the webhook and create a new one.
+</Warning>
+
+---
+
+## Errors
+
+| Status | When |
+|--------|------|
+| `400` | URL missing, invalid URL format, no events, invalid event types, name missing |
+| `401` | Invalid or missing API key |
+| `402` | Subscription past due (workspace is read-only) |

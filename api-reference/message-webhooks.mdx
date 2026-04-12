@@ -82,8 +82,15 @@ For `message.reply`, **`message`** is the **reply text only** (string) — what 
 | `recipientPhone` | Recipient phone or undefined |
 | `name` | Display name (lead name or recipient) |
 | `parentMessages` | Array of `{ messageId, message, sentAtUtc, batchId, stepIndex }` (same as API) |
+| `recentReplies` | Array of `{ messageId, message, receivedAtUtc }` — last 10 inbound replies (same as API) |
 
-No extra fields. Same as `GET /api/replies` response `replies[n]`.
+Plus `recentReplies` — the last 10 inbound replies from this lead (array, possibly empty):
+
+| Field | Description |
+|-------|-------------|
+| `messageId` | Reply message ID |
+| `message` | Reply text |
+| `receivedAtUtc` | When the reply was received (UTC ISO) |
 
 Example payload:
 
@@ -117,6 +124,9 @@ Example payload:
       "name": "Jane Doe",
       "parentMessages": [
         { "messageId": "674def...", "message": "Hi Jane, we have an offer...", "sentAtUtc": "2025-03-01T10:00:00.000Z", "batchId": "campaign_674..._0", "stepIndex": 0 }
+      ],
+      "recentReplies": [
+        { "messageId": "674abc...", "message": "Thanks, I'm interested!", "receivedAtUtc": "2025-03-02T14:59:58.000Z" }
       ]
     },
     "repliedAtUtc": "2025-03-02T14:59:58.000Z",
@@ -367,6 +377,63 @@ Every webhook payload includes these base fields:
 
 ---
 
+## Headers & signature verification
+
+Every webhook POST includes these headers:
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | `application/json` |
+| `X-Tuco-Signature` | HMAC-SHA256 hex digest of the JSON body, signed with your webhook secret |
+| `X-Tuco-Event` | Event type (e.g. `message.sent`) |
+| `X-Tuco-Timestamp` | ISO 8601 UTC timestamp of when the webhook was fired |
+
+**Verify signatures** to confirm webhooks actually came from Tuco:
+
+<CodeGroup>
+
+```javascript Node.js
+const crypto = require('crypto');
+
+function verifyWebhook(body, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(body))
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expected)
+  );
+}
+
+// In your handler:
+const sig = req.headers['x-tuco-signature'];
+if (!verifyWebhook(req.body, sig, process.env.TUCO_WEBHOOK_SECRET)) {
+  return res.status(401).send('Invalid signature');
+}
+```
+
+```python Python
+import hmac, hashlib, json
+
+def verify_webhook(body: dict, signature: str, secret: str) -> bool:
+    expected = hmac.new(
+        secret.encode(),
+        json.dumps(body, separators=(',', ':')).encode(),
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(signature, expected)
+```
+
+</CodeGroup>
+
+<Tip>
+Your webhook secret is shown **once** when you create the webhook. Save it immediately.
+You can't retrieve it later — you'd need to delete and recreate the webhook.
+</Tip>
+
+---
+
 ## Consuming webhooks safely
 
 <Steps>
@@ -389,6 +456,8 @@ Every webhook payload includes these base fields:
 </Steps>
 
 <Warning>
-Tuco may retry webhook delivery if your endpoint returns a non-2xx status.
-Always make your handler idempotent.
+Tuco does **not** retry webhook delivery. Each event fires once (fire-and-forget).
+If your endpoint is down or returns a non-2xx status, that delivery is lost.
+Make sure your endpoint is reliable and returns `2xx` quickly. You can use the
+[health-check endpoint](/api-reference/endpoint/test-webhook) to verify your endpoint is reachable.
 </Warning>

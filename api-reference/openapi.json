@@ -840,6 +840,271 @@
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }
+    },
+    "/api/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhooks",
+        "description": "List all webhooks registered in the current workspace. Secrets are never returned.",
+        "tags": ["Webhooks"],
+        "responses": {
+          "200": {
+            "description": "Webhook list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ListWebhooksResponse" },
+                "example": {
+                  "webhooks": [
+                    {
+                      "id": "680a1b2c3d4e5f6789012345",
+                      "url": "https://example.com/webhooks/tuco",
+                      "events": ["message.sent", "message.failed", "message.reply"],
+                      "name": "Production webhook",
+                      "description": "Sends events to our CRM",
+                      "isActive": true,
+                      "lastTriggeredAt": "2026-04-12T10:30:00.000Z",
+                      "lastSuccessAt": "2026-04-12T10:30:00.000Z",
+                      "lastFailureAt": null,
+                      "failureCount": 0,
+                      "createdAt": "2026-03-01T00:00:00.000Z",
+                      "updatedAt": "2026-04-12T10:30:00.000Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create webhook",
+        "description": "Register a new webhook endpoint. The signing secret is returned **once** in the response — save it immediately. You won't be able to retrieve it again.",
+        "tags": ["Webhooks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateWebhookRequest" },
+              "examples": {
+                "allEvents": {
+                  "summary": "Subscribe to all events",
+                  "value": {
+                    "url": "https://example.com/webhooks/tuco",
+                    "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+                    "name": "Production webhook"
+                  }
+                },
+                "repliesOnly": {
+                  "summary": "Replies only",
+                  "value": {
+                    "url": "https://example.com/webhooks/replies",
+                    "events": ["message.reply"],
+                    "name": "Reply listener",
+                    "description": "Forwards replies to Slack"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook created. Secret is returned **once** — save it now.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateWebhookResponse" },
+                "example": {
+                  "id": "680a1b2c3d4e5f6789012345",
+                  "secret": "dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQ=",
+                  "url": "https://example.com/webhooks/tuco",
+                  "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+                  "name": "Production webhook",
+                  "description": null,
+                  "createdAt": "2026-04-12T12:00:00.000Z",
+                  "warning": "Save this secret now. You will not be able to see it again."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "urlRequired": { "summary": "URL required", "value": { "error": "URL is required" } },
+                  "invalidUrl": { "summary": "Invalid URL", "value": { "error": "Invalid URL format" } },
+                  "noEvents": { "summary": "No events", "value": { "error": "At least one event must be selected" } },
+                  "invalidEvents": { "summary": "Invalid event type", "value": { "error": "Invalid events: message.invalid" } },
+                  "noName": { "summary": "Name required", "value": { "error": "Name is required" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } }
+        }
+      }
+    },
+    "/api/webhooks/{id}": {
+      "get": {
+        "operationId": "getWebhook",
+        "summary": "Get webhook",
+        "description": "Get details for a single webhook. The secret is never returned.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookResponse" },
+                "example": {
+                  "id": "680a1b2c3d4e5f6789012345",
+                  "url": "https://example.com/webhooks/tuco",
+                  "events": ["message.sent", "message.failed", "message.reply"],
+                  "name": "Production webhook",
+                  "description": "Sends events to our CRM",
+                  "isActive": true,
+                  "lastTriggeredAt": "2026-04-12T10:30:00.000Z",
+                  "lastSuccessAt": "2026-04-12T10:30:00.000Z",
+                  "lastFailureAt": null,
+                  "failureCount": 0,
+                  "createdAt": "2026-03-01T00:00:00.000Z",
+                  "updatedAt": "2026-04-12T10:30:00.000Z"
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateWebhook",
+        "summary": "Update webhook",
+        "description": "Update a webhook's URL, subscribed events, name, description, or active status. Only include the fields you want to change.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateWebhookRequest" },
+              "examples": {
+                "changeUrl": {
+                  "summary": "Change URL",
+                  "value": { "url": "https://new-endpoint.example.com/webhooks" }
+                },
+                "disable": {
+                  "summary": "Disable webhook",
+                  "value": { "isActive": false }
+                },
+                "changeEvents": {
+                  "summary": "Change subscribed events",
+                  "value": { "events": ["message.reply", "message.opened"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook updated",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } }, "example": { "success": true } } }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalidUrl": { "summary": "Invalid URL", "value": { "error": "Invalid URL format" } },
+                  "noEvents": { "summary": "Empty events", "value": { "error": "At least one event must be selected" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete webhook",
+        "description": "Permanently delete a webhook. This stops all future event deliveries to this endpoint.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook deleted",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } }, "example": { "success": true } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      }
+    },
+    "/api/webhooks/{id}/health-check": {
+      "post": {
+        "operationId": "testWebhook",
+        "summary": "Test webhook (health check)",
+        "description": "Fire a test webhook to your endpoint to verify it's reachable and responding correctly. Sends a real signed POST with `data.test: true` so your handler can distinguish test pings from real events. Uses the webhook's first subscribed event type.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Health check result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookHealthCheckResponse" },
+                "examples": {
+                  "success": {
+                    "summary": "Endpoint is healthy",
+                    "value": {
+                      "success": true,
+                      "message": "Health check passed",
+                      "statusCode": 200,
+                      "response": "OK"
+                    }
+                  },
+                  "failure": {
+                    "summary": "Endpoint unreachable or errored",
+                    "value": {
+                      "success": false,
+                      "error": "HTTP 502: Bad Gateway",
+                      "details": "upstream connect error",
+                      "statusCode": 502
+                    }
+                  },
+                  "timeout": {
+                    "summary": "Endpoint timed out",
+                    "value": {
+                      "success": false,
+                      "error": "The operation was aborted due to timeout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      }
     }
   },
   "components": {
@@ -1184,6 +1449,86 @@
           "ghlLocationId": { "type": "string", "nullable": true },
           "hsPortalId": { "type": "string", "nullable": true },
           "hsContactId": { "type": "string", "nullable": true }
+        }
+      },
+      "WebhookObject": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Webhook ID" },
+          "url": { "type": "string", "description": "Endpoint URL" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "Subscribed event types"
+          },
+          "name": { "type": "string", "description": "User-friendly name" },
+          "description": { "type": "string", "nullable": true, "description": "Optional description" },
+          "isActive": { "type": "boolean", "description": "Whether the webhook is active" },
+          "lastTriggeredAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last time any event was sent" },
+          "lastSuccessAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last successful delivery" },
+          "lastFailureAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last failed delivery" },
+          "failureCount": { "type": "integer", "description": "Consecutive failure count" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ListWebhooksResponse": {
+        "type": "object",
+        "properties": {
+          "webhooks": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookObject" } }
+        }
+      },
+      "WebhookResponse": { "$ref": "#/components/schemas/WebhookObject" },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events", "name"],
+        "properties": {
+          "url": { "type": "string", "description": "HTTPS endpoint URL to receive webhook POSTs" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "Event types to subscribe to (at least one required)"
+          },
+          "name": { "type": "string", "description": "User-friendly name for this webhook" },
+          "description": { "type": "string", "description": "Optional description" }
+        }
+      },
+      "CreateWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Webhook ID" },
+          "secret": { "type": "string", "description": "HMAC signing secret — shown ONCE. Save it now." },
+          "url": { "type": "string" },
+          "events": { "type": "array", "items": { "type": "string" } },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "warning": { "type": "string", "description": "Reminder to save the secret" }
+        }
+      },
+      "UpdateWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "New endpoint URL" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "New event subscriptions (replaces existing)"
+          },
+          "name": { "type": "string", "description": "New name" },
+          "description": { "type": "string", "description": "New description" },
+          "isActive": { "type": "boolean", "description": "Enable or disable without deleting" }
+        }
+      },
+      "WebhookHealthCheckResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "description": "Whether your endpoint responded with 2xx" },
+          "message": { "type": "string", "description": "Human-readable result (on success)" },
+          "statusCode": { "type": "integer", "description": "HTTP status code from your endpoint" },
+          "response": { "type": "string", "description": "Response body from your endpoint" },
+          "error": { "type": "string", "description": "Error message (on failure)" },
+          "details": { "type": "string", "description": "Error details (on failure)" }
         }
       },
       "ErrorResponse": {
