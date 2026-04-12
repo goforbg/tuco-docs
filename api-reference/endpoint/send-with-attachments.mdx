@@ -1,0 +1,120 @@
+---
+title: "Send with Attachments"
+api: "POST /api/messages"
+description: "Send images, videos, voice notes, and files via iMessage — with or without text"
+---
+
+Send attachments alongside or instead of text messages. Tuco handles downloading, caching, and delivering files through your device relay.
+
+## Request body
+
+Use the same `POST /api/messages` endpoint. Add `attachmentUrls` to your request:
+
+<ParamField body="attachmentUrls" type="string[]" required>
+  Array of public URLs to attach. **Max 2 attachments per message, max 25 MB each.**
+</ParamField>
+
+<ParamField body="attachmentNames" type="string[]">
+  Optional display names for each attachment (same order as `attachmentUrls`). When omitted, the filename from the URL is used.
+</ParamField>
+
+<ParamField body="message" type="string">
+  Optional text to send with the attachments. When omitted, only the attachment is sent (no "Attachment" placeholder text).
+</ParamField>
+
+---
+
+## Supported formats
+
+| Category | Formats | Notes |
+|----------|---------|-------|
+| Images | PNG, JPG, JPEG, GIF, WebP, HEIC | Renders inline in iMessage |
+| Video | MP4, MOV | Up to 25 MB. Renders as playable video |
+| Audio / Voice notes | **CAF** | `.caf` files render as native iMessage voice notes (the play button bubble). Record with Core Audio or convert from other formats |
+| Documents | PDF | Renders as attachment preview |
+
+<Warning>
+**Voice notes must be `.caf` format.** MP3, WAV, M4A, and other audio formats are sent as generic file attachments, not as the native iMessage voice note bubble. To get the recognizable play-button bubble, use `.caf` (Core Audio Format).
+</Warning>
+
+---
+
+## Examples
+
+<CodeGroup>
+
+```bash Image + text
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Check this out!",
+    "leadId": "667f1f77bcf86cd799439012",
+    "attachmentUrls": ["https://example.com/photo.jpg"]
+  }'
+```
+
+```bash Video only (no text)
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "leadId": "667f1f77bcf86cd799439012",
+    "attachmentUrls": ["https://example.com/intro-video.mp4"]
+  }'
+```
+
+```bash Voice note (.caf)
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "leadId": "667f1f77bcf86cd799439012",
+    "attachmentUrls": ["https://example.com/voice-note.caf"]
+  }'
+```
+
+```bash Video + text in one message
+curl -X POST "https://app.tuco.ai/api/messages" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "I made this for you. Whenever you are ready: example.com/schedule",
+    "leadId": "667f1f77bcf86cd799439012",
+    "attachmentUrls": ["https://example.com/personalized-video.mp4"]
+  }'
+```
+
+</CodeGroup>
+
+---
+
+## Limits
+
+| Limit | Value |
+|-------|-------|
+| Max attachments per message | **2** |
+| Max file size per attachment | **25 MB** |
+| Supported sources | Any public URL, UploadThing URLs, Blob URLs belonging to your workspace |
+
+<Tip>
+**Attachment caching**: When you send the same attachment URL multiple times (e.g. a promo video in a campaign), Tuco caches it per line. The second send skips download + upload, making delivery significantly faster.
+</Tip>
+
+---
+
+## Device gap
+
+Each attachment counts as part of a single message — not a separate send. Sending text + video in one API call uses **one** device gap (30s), not two. This is significantly faster than sending them as separate messages.
+
+<Info>
+For automations that send a video followed by a text CTA, combine them into a **single** API call with `message` + `attachmentUrls` instead of two separate calls. This halves your device gap overhead.
+</Info>
+
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | `attachmentUrls` not an array | `{ "error": "attachmentUrls must be an array" }` |
+| `400` | More than 2 attachments | `{ "error": "Maximum 2 attachments per message" }` |
+| `403` | URL doesn't belong to workspace | `{ "error": "Attachment URL does not belong to this organization" }` |

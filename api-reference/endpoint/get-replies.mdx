@@ -1,36 +1,57 @@
 ---
 title: "Check Replies"
 api: "GET /api/replies"
-description: "Get replies for a lead or campaign — who replied and when"
+description: "Get replies for a lead or campaign — who replied, what they said, and the conversation context"
 ---
 
 <Note>
-Use this endpoint to check if a specific lead has replied, or to list all leads who replied (optionally scoped to a campaign). Same shape as the `message.reply` webhook payload's `data.reply`.
+Use this endpoint to check if a specific lead has replied, or to list all leads who replied (optionally scoped to a campaign). Returns the reply text, up to 10 recent replies from the lead, and up to 10 outbound messages you sent them.
 </Note>
 
-## Endpoint
+## Authentication
 
-- **Method**: `GET`
-- **Path**: `/api/replies`
-- **Auth**: `Authorization: Bearer tuco_sk_xxxxxxxxxxxxx`
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
 
 ## Query parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `leadId` | string | Replies from this lead only (valid ObjectId; returns 404 if lead not found). |
-| `campaignId` | string | Restrict to leads who replied and are in this campaign. |
-| `recipientEmail` | string | Filter by reply sender email. |
-| `recipientPhone` | string | Filter by reply sender phone (E.164 or normalized). |
-| `page` | number | Default `1`. |
-| `limit` | number | Default `50`, max `100`. |
+<ParamField query="leadId" type="string">Replies from this lead only (valid ObjectId; returns 404 if lead not found).</ParamField>
+<ParamField query="campaignId" type="string">Restrict to leads who replied and are in this campaign.</ParamField>
+<ParamField query="recipientEmail" type="string">Filter by reply sender email.</ParamField>
+<ParamField query="recipientPhone" type="string">Filter by reply sender phone (E.164 or normalized).</ParamField>
+<ParamField query="page" type="number" default="1">Page number.</ParamField>
+<ParamField query="limit" type="number" default="50">Results per page (max 100).</ParamField>
 
-## Example request
+---
 
-```bash
-GET https://app.tuco.ai/api/replies?leadId=69b2c41d352a78479d2c623b&page=1&limit=50
-Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+## Examples
+
+<CodeGroup>
+
+```bash By phone number
+curl "https://app.tuco.ai/api/replies?recipientPhone=%2B14422646782&limit=10" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
 ```
+
+```bash By lead ID
+curl "https://app.tuco.ai/api/replies?leadId=69b2c41d352a78479d2c623b" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+```bash By campaign
+curl "https://app.tuco.ai/api/replies?campaignId=69ab444ac1feb77d7f46462f&page=1&limit=50" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+```bash By email
+curl "https://app.tuco.ai/api/replies?recipientEmail=john%40example.com" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+</CodeGroup>
+
+---
 
 ## Success response (200)
 
@@ -40,10 +61,23 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
     {
       "leadId": "69b2c41d352a78479d2c623b",
       "messageId": "69b340dd6dae1d942ece4d09",
+      "message": "Stop",
       "respondedAtUtc": "2026-03-12T22:40:29.174Z",
       "recipientPhone": "+919042956129",
       "recipientEmail": "goforbg@icloud.com",
       "name": "BG Real",
+      "recentReplies": [
+        {
+          "messageId": "69b340dd6dae1d942ece4d09",
+          "message": "Stop",
+          "receivedAtUtc": "2026-03-12T22:40:29.174Z"
+        },
+        {
+          "messageId": "69b33fdd6dae1d942ece4d08",
+          "message": "Thanks for reaching out",
+          "receivedAtUtc": "2026-03-12T21:15:00.000Z"
+        }
+      ],
       "parentMessages": [
         {
           "messageId": "69b344bc6dae1d942ece4d0e",
@@ -62,6 +96,44 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 }
 ```
 
+### Reply fields
+
+<ResponseField name="leadId" type="string">Lead who replied.</ResponseField>
+<ResponseField name="messageId" type="string">ID of the most recent reply message.</ResponseField>
+<ResponseField name="message" type="string">The reply text (e.g. "Stop", "Interested!", "Call me tomorrow").</ResponseField>
+<ResponseField name="respondedAtUtc" type="string">ISO 8601 timestamp of the most recent reply.</ResponseField>
+<ResponseField name="recipientPhone" type="string">Lead's phone number.</ResponseField>
+<ResponseField name="recipientEmail" type="string">Lead's email address.</ResponseField>
+<ResponseField name="name" type="string">Lead's display name.</ResponseField>
+
+### recentReplies (up to 10)
+
+All inbound replies from this lead, newest first. Gives you the full conversation context from their side.
+
+<ResponseField name="recentReplies" type="array">
+  <Expandable title="Reply object">
+    <ResponseField name="messageId" type="string">Reply message ID.</ResponseField>
+    <ResponseField name="message" type="string">Reply text (truncated to 200 chars).</ResponseField>
+    <ResponseField name="receivedAtUtc" type="string">When the reply was received (UTC ISO 8601).</ResponseField>
+  </Expandable>
+</ResponseField>
+
+### parentMessages (up to 10)
+
+Outbound messages you sent to this lead, newest first. Shows what you said before they replied.
+
+<ResponseField name="parentMessages" type="array">
+  <Expandable title="Parent message object">
+    <ResponseField name="messageId" type="string">Outbound message ID.</ResponseField>
+    <ResponseField name="message" type="string">Message text (truncated to 200 chars).</ResponseField>
+    <ResponseField name="sentAtUtc" type="string">When the message was sent (UTC ISO 8601).</ResponseField>
+    <ResponseField name="batchId" type="string">Batch/campaign batch ID if applicable.</ResponseField>
+    <ResponseField name="stepIndex" type="integer">Campaign step index if applicable.</ResponseField>
+  </Expandable>
+</ResponseField>
+
+---
+
 ## Error responses
 
 | Status | When | Body |
@@ -69,8 +141,5 @@ Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 | `400` | Invalid `leadId` or `campaignId` | `{ "error": "Invalid leadId" }` or `{ "error": "Invalid campaignId" }` |
 | `401` | Missing or invalid API key | `{ "error": "Unauthorized" }` |
 | `404` | `leadId` provided but lead not found | `{ "error": "Lead not found or access denied" }` |
+| `404` | `campaignId` provided but campaign not found | `{ "error": "Campaign not found" }` |
 | `500` | Server error | `{ "error": "Failed to fetch replies" }` |
-
----
-
-Use the **Try it** panel (when viewing this page from the API Reference generated from OpenAPI) to run the request interactively against `https://app.tuco.ai`.

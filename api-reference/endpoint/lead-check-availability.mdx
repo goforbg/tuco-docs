@@ -1,32 +1,33 @@
 ---
-title: "Check Lead Availability Endpoint"
+title: "Check iMessage Availability (Single Lead)"
 api: "GET /api/leads/check-availability"
 description: "Check if a specific lead is reachable via iMessage"
 ---
 
-## Endpoint
+Check iMessage availability for a single lead using their stored phone numbers and emails. Updates the lead’s `availabilityStatus` field.
 
-- **Method**: `GET`  
-- **Path**: `/api/leads/check-availability`
+<Tip>
+Don’t need a lead ID? Use [`POST /api/leads/check-availability`](/api-reference/endpoint/bulk-check-availability) with `{ "address": "+12025551234" }` to check any phone or email without creating a lead first.
+</Tip>
 
-Checks iMessage availability for a single Tuco lead and updates that lead’s availability status.
-
----
-
-## Query Parameters
-
-- `id` (`string`, required) – the lead’s ID.
-
-Example:
+## Authentication
 
 ```bash
-GET /api/leads/check-availability?id=667f1f77bcf86cd799439012
-Authorization: Bearer tuco_xxx
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 ```
 
----
+## Query parameters
 
-## Response
+<ParamField query="id" type="string" required>The lead’s ID.</ParamField>
+
+## Example
+
+```bash
+curl "https://app.tuco.ai/api/leads/check-availability?id=667f1f77bcf86cd799439012" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+## Success response (200)
 
 ```json
 {
@@ -37,11 +38,22 @@ Authorization: Bearer tuco_xxx
 }
 ```
 
-`status` will be one of:
+<ResponseField name="available" type="boolean">Whether the lead is reachable via iMessage.</ResponseField>
+<ResponseField name="status" type="string">
+  One of:
+  - `"available"` — at least one stored address supports iMessage
+  - `"unavailable"` — none of the stored addresses support iMessage
+  - `"error"` — the check failed (temporary issue)
+</ResponseField>
 
-- `"available"` – at least one stored address supports iMessage.  
-- `"unavailable"` – none of the stored addresses support iMessage.  
-- `"error"` – the check failed (for example, due to a temporary issue).
+The same status is written back to the lead, so you can also read it via the Leads API.
 
-The same status is written back to the lead, so you can also read it via the main Leads API.
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | Missing `id` parameter | `{ "error": "Lead ID is required" }` |
+| `400` | Availability server not configured | `{ "error": "Availability check server not configured" }` |
+| `401` | Invalid or missing API key | `{ "error": "Unauthorized" }` |
+| `404` | Lead not found | `{ "error": "Lead not found" }` |
 

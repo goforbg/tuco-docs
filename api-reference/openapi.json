@@ -562,10 +562,15 @@
                     {
                       "leadId": "69b2c41d352a78479d2c623b",
                       "messageId": "69b340dd6dae1d942ece4d09",
+                      "message": "Stop",
                       "respondedAtUtc": "2026-03-12T22:40:29.174Z",
                       "recipientPhone": "+919042956129",
                       "recipientEmail": "goforbg@icloud.com",
                       "name": "BG Real",
+                      "recentReplies": [
+                        { "messageId": "69b340dd6dae1d942ece4d09", "message": "Stop", "receivedAtUtc": "2026-03-12T22:40:29.174Z" },
+                        { "messageId": "69b33fdd6dae1d942ece4d08", "message": "Thanks for reaching out", "receivedAtUtc": "2026-03-12T21:15:00.000Z" }
+                      ],
                       "parentMessages": [
                         { "messageId": "69b344bc6dae1d942ece4d0e", "message": "Here's your document.", "sentAtUtc": "2026-03-12T22:57:02.892Z", "batchId": null, "stepIndex": null }
                       ]
@@ -750,6 +755,83 @@
                 "examples": {
                   "addressOrLeadIds": { "summary": "address or leadIds required", "value": { "error": "Either address or leadIds is required" } },
                   "serverNotConfigured": { "summary": "Server not configured", "value": { "error": "Availability check server not configured" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/messages/cancel-for-lead": {
+      "post": {
+        "operationId": "cancelForLead",
+        "summary": "Cancel pending messages for a lead",
+        "description": "Cancel all pending, scheduled, and queued messages for a specific lead. Useful when a lead replies \"Stop\" or opts out mid-sequence. Accepts `leadId`, `recipientPhone`, or `recipientEmail` — at least one is required. When only a phone or email is provided, Tuco looks up the lead first, then falls back to cancelling by address on messages directly.",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CancelForLeadRequest" },
+              "examples": {
+                "byLeadId": {
+                  "summary": "Cancel by lead ID",
+                  "value": { "leadId": "69b2c41d352a78479d2c623b" }
+                },
+                "byPhone": {
+                  "summary": "Cancel by phone (no lead ID needed)",
+                  "value": { "recipientPhone": "+14422646782" }
+                },
+                "byEmail": {
+                  "summary": "Cancel by email",
+                  "value": { "recipientEmail": "john@example.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancellation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CancelForLeadResponse" },
+                "examples": {
+                  "cancelled": {
+                    "summary": "Messages cancelled",
+                    "value": {
+                      "success": true,
+                      "cancelledCount": 3,
+                      "jobsRemovedFromQueue": 2,
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageIds": ["69dba0001111111111111111", "69dba0001111111111111112", "69dba0001111111111111113"]
+                    }
+                  },
+                  "noPending": {
+                    "summary": "No pending messages",
+                    "value": {
+                      "success": true,
+                      "cancelledCount": 0,
+                      "jobsRemovedFromQueue": 0,
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageIds": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "noIdentifier": { "summary": "No identifier provided", "value": { "error": "Either leadId, recipientPhone, or recipientEmail is required" } },
+                  "invalidLeadId": { "summary": "Invalid leadId", "value": { "error": "Invalid leadId" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
                 }
               }
             }
@@ -1012,12 +1094,26 @@
               "properties": {
                 "leadId": { "type": "string" },
                 "messageId": { "type": "string" },
+                "message": { "type": "string", "description": "The reply text from the lead (e.g. \"Stop\")" },
                 "respondedAtUtc": { "type": "string", "format": "date-time" },
                 "recipientEmail": { "type": "string" },
                 "recipientPhone": { "type": "string" },
                 "name": { "type": "string" },
+                "recentReplies": {
+                  "type": "array",
+                  "description": "Up to 10 most recent inbound replies from this lead, newest first",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messageId": { "type": "string" },
+                      "message": { "type": "string" },
+                      "receivedAtUtc": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                },
                 "parentMessages": {
                   "type": "array",
+                  "description": "Up to 10 most recent outbound messages sent to this lead, newest first",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -1036,6 +1132,24 @@
           "page": { "type": "integer" },
           "limit": { "type": "integer" },
           "totalPages": { "type": "integer" }
+        }
+      },
+      "CancelForLeadRequest": {
+        "type": "object",
+        "properties": {
+          "leadId": { "type": "string", "description": "Lead ID to cancel messages for" },
+          "recipientPhone": { "type": "string", "description": "Phone number (E.164) — looks up lead, falls back to matching messages directly" },
+          "recipientEmail": { "type": "string", "description": "Email address — looks up lead, falls back to matching messages directly" }
+        }
+      },
+      "CancelForLeadResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "cancelledCount": { "type": "integer", "description": "Number of messages cancelled in DB" },
+          "jobsRemovedFromQueue": { "type": "integer", "description": "Number of BullMQ jobs removed" },
+          "leadId": { "type": "string", "nullable": true },
+          "messageIds": { "type": "array", "items": { "type": "string" }, "description": "IDs of cancelled messages" }
         }
       },
       "AddLeadToCampaignRequest": {

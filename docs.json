@@ -105,12 +105,33 @@
             ]
           },
           {
-            "group": "Core Resources",
+            "group": "iMessage Availability",
+            "pages": [
+              "api-reference/endpoint/lead-check-availability",
+              "api-reference/endpoint/bulk-check-availability",
+              "api-reference/endpoint/check-availability-rr"
+            ]
+          },
+          {
+            "group": "Messages",
             "pages": [
               "api-reference/messages",
+              "api-reference/endpoint/send-message",
+              "api-reference/endpoint/send-with-attachments",
+              "api-reference/endpoint/cancel-for-lead"
+            ]
+          },
+          {
+            "group": "Replies",
+            "pages": [
+              "api-reference/endpoint/get-replies"
+            ]
+          },
+          {
+            "group": "Lines & Leads",
+            "pages": [
               "api-reference/lines",
-              "api-reference/leads",
-              "api-reference/endpoint/check-availability-rr"
+              "api-reference/leads"
             ]
           }
         ]
