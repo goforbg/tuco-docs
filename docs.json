@@ -8,6 +8,7 @@
     "dark": "#111827"
   },
   "favicon": "/images/tuco_v1_round.svg",
+  "openapi": "api-reference/openapi.json",
   "navigation": {
     "tabs": [
       {
@@ -84,7 +85,6 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "api-reference/openapi.json",
         "groups": [
           {
             "group": "Overview",
