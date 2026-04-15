@@ -7,7 +7,7 @@ description: "Check if a specific lead is reachable via iMessage"
 Check iMessage availability for a single lead using their stored phone numbers and emails. Tuco checks every address on the lead (phone, email, altPhone1-3, altEmail1-3) and stops at the first one that is iMessage-capable. Updates the lead’s `availabilityStatus` field.
 
 <Tip>
-Don’t need a lead ID? Use [`POST /api/leads/check-availability`](/api-reference/endpoint/bulk-check-availability) with `{ "address": "+12025551234" }` to check any phone or email without creating a lead first.
+Don’t have a lead ID? Use [`GET /api/check-availability?address=+12025551234`](/api-reference/endpoint/check-availability) to check any phone or email directly. No saved lead required.
 </Tip>
 
 ## Authentication
