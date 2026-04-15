@@ -1,0 +1,57 @@
+---
+title: "Telegram Bot"
+description: "Get real-time reply alerts, approve AI drafts, and send iMessages from Telegram."
+---
+
+# Telegram Bot
+
+Connect the Tuco Telegram Bot to manage your iMessage workspace from your phone.
+
+## Setup
+
+1. Go to **API Keys** → **Telegram** tab in the [dashboard](https://app.tuco.ai/api-keys)
+2. Click **Connect Telegram** — opens [@TucoAIBot](https://t.me/TucoAIBot) in Telegram
+3. The bot auto-links to your workspace
+
+<Info>Each workspace can connect to one Telegram chat. To change, disconnect and reconnect.</Info>
+
+## Commands
+
+### `/whoami`
+Returns your workspace info: name, plan, active lines, team members.
+
+### `/send +phone message`
+Sends an iMessage directly from Telegram.
+
+```
+/send +19042956129 Hey, wanted to follow up on our call yesterday
+```
+
+The message is sent through your first active line.
+
+### Reply to Notification
+When you receive an inbound reply notification, just reply to that Telegram message — your reply is sent as an iMessage to the lead.
+
+## What Gets Sent to Telegram
+
+| Notification | When |
+|-------------|------|
+| Reply alerts | Lead replies to your iMessage (name, phone, message preview) |
+| KB draft approvals | AI drafts a reply in Co-pilot mode (Approve/Reject buttons) |
+| Sequence approvals | God sequence step needs approval (message preview) |
+| Onboarding events | New user signs up, submits goals |
+| Billing events | Checkout started, subscription changes |
+
+## Knowledge Base Approval Flow
+
+When using the KB in **Co-pilot mode** with Telegram as your approval channel:
+
+1. Lead sends a message
+2. AI drafts a reply with a confidence score
+3. You receive the draft in Telegram with **Approve** and **Reject** buttons
+4. Tap **Approve** to send, **Reject** to discard
+5. Or reply with edited text to send a modified version
+
+## Disconnecting
+
+Go to **API Keys** → **Telegram** tab → **Disconnect**. This removes the link between your workspace and Telegram chat.

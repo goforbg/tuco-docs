@@ -67,7 +67,12 @@
           {
             "group": "Integrations",
             "pages": [
-              "integrations/hubspot"
+              "integrations/hubspot",
+              "integrations/telegram-bot",
+              "integrations/email-bridge",
+              "integrations/mcp-server",
+              "integrations/webhooks",
+              "integrations/n8n"
             ]
           },
           {

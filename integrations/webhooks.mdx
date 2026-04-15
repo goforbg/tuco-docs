@@ -1,0 +1,102 @@
+---
+title: "Webhooks"
+description: "Receive real-time HMAC-signed events when messages are sent, replied, or fail."
+---
+
+# Webhooks
+
+Tuco sends HTTP POST requests to your endpoint when message events occur. All payloads are signed with HMAC-SHA256.
+
+## Setup
+
+1. Go to **API Keys** → **Webhooks** tab
+2. Click **Add Webhook**
+3. Enter your endpoint URL
+4. Save the generated webhook secret
+
+## Events
+
+| Event | Description |
+|-------|------------|
+| `message.sent` | iMessage successfully delivered |
+| `message.failed` | Delivery failed (recipient may not have iMessage) |
+| `message.fallback` | iMessage unavailable — route to SMS provider |
+| `message.reply` | Lead replied to your message |
+| `message.opened` | Email message opened (email lines only) |
+
+## Payload Structure
+
+```json
+{
+  "event": "message.reply",
+  "timestamp": "2026-04-15T12:00:00Z",
+  "workspaceId": "org_abc123",
+  "data": {
+    "messageId": "msg_xyz789",
+    "recipientPhone": "+19042956129",
+    "message": "Yes, I'm interested!",
+    "status": "received",
+    "lineId": "line_001",
+    "firstName": "Jane",
+    "lastName": "Smith",
+    "attachmentUrls": [],
+    "attachmentNames": []
+  }
+}
+```
+
+## Headers
+
+| Header | Description |
+|--------|------------|
+| `X-Tuco-Signature` | HMAC-SHA256 hex digest of the JSON body |
+| `X-Tuco-Event` | Event type (e.g., `message.reply`) |
+| `X-Tuco-Timestamp` | ISO 8601 timestamp |
+
+## Signature Verification
+
+```javascript
+const crypto = require('crypto');
+
+function verifyWebhook(body, signature, secret) {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(JSON.stringify(body))
+    .digest('hex');
+  return signature === expected;
+}
+```
+
+<Warning>Always verify the signature before processing webhook payloads. Reject requests with invalid signatures.</Warning>
+
+## Testing
+
+Click the **Test** button next to any webhook in the dashboard. Tuco sends a test payload with `testMode: true` and shows you the response status + latency.
+
+## Retry Policy
+
+Tuco does not retry failed webhook deliveries. If your endpoint returns a non-2xx status, the event is logged but not resent. Use the **Test** button to verify your endpoint is reachable before going live.
+
+## Common Patterns
+
+### SMS Fallback
+```javascript
+if (event === 'message.fallback') {
+  // Recipient doesn't have iMessage — send SMS via Twilio
+  await twilio.messages.create({
+    to: data.recipientPhone,
+    from: '+1YOURTWILIONUMBER',
+    body: data.message,
+  });
+}
+```
+
+### CRM Update
+```javascript
+if (event === 'message.reply') {
+  // Update HubSpot contact with reply
+  await hubspot.crm.contacts.basicApi.update(contactId, {
+    properties: { last_reply: data.message, last_reply_date: data.timestamp }
+  });
+}
+```

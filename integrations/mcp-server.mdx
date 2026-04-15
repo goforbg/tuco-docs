@@ -1,0 +1,68 @@
+---
+title: "MCP Server"
+description: "Control Tuco from Claude Desktop, Cursor, or any MCP-compatible AI agent."
+---
+
+# MCP Server
+
+The Tuco MCP (Model Context Protocol) Server lets AI assistants manage your iMessage platform using natural language.
+
+## Install
+
+```bash
+npx @tuco-ai/mcp-server
+```
+
+## Configure Claude Desktop
+
+Add this to your Claude Desktop config file (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "tuco": {
+      "command": "npx",
+      "args": ["@tuco-ai/mcp-server"],
+      "env": {
+        "TUCO_API_KEY": "tuco_your_api_key"
+      }
+    }
+  }
+}
+```
+
+<Info>Get your API key from **API Keys** tab in the [Tuco dashboard](https://app.tuco.ai/api-keys).</Info>
+
+## Available Tools
+
+| Tool | Description |
+|------|------------|
+| `send-imessage` | Send an iMessage to any phone number |
+| `add-lead` | Add a new contact to your workspace |
+| `check-imessage` | Check if a number has iMessage |
+| `lines-health` | Monitor all sending line health status |
+| `check-limits` | View line limits and current usage |
+| `check-replies` | List recent unread replies |
+| `list-campaigns` | View campaigns with status and stats |
+| `check-health` | Verify API connection status |
+
+## Example Prompts
+
+Once connected, just talk to your AI assistant:
+
+- "Send an iMessage to +12125551234 saying Hey, wanted to follow up on our call"
+- "Check if +19042956129 has iMessage enabled"
+- "How are my sending lines doing?"
+- "Show me the last 5 unread replies"
+- "Add a lead: John Doe, +15551234567, CEO at Acme Corp"
+
+## Supported Clients
+
+- Claude Desktop
+- Cursor
+- Windsurf
+- Any MCP-compatible AI client
+
+## Source Code
+
+[View on GitHub](https://github.com/goforbg/tuco-mcp-server)

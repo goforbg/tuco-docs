@@ -1,0 +1,59 @@
+---
+title: "n8n Workflows"
+description: "Pre-built workflow templates for CRM sync, reply routing, and outbound campaigns."
+---
+
+# n8n Integration
+
+Tuco provides pre-built n8n workflow templates to connect your iMessage platform with CRMs, notification tools, and custom logic.
+
+## Available Templates
+
+| Template | Description |
+|----------|------------|
+| **Unified Workflow** | All-in-one: send messages, handle replies, update CRM |
+| **Flow A — Outbound** | Send initial outreach messages to leads |
+| **Flow B — Follow-up** | Automated follow-up sequence on no reply |
+| **Reply Handler** | Route incoming replies to your CRM or webhook |
+
+## Download Templates
+
+1. Go to **API Keys** → **n8n Templates** tab in the [dashboard](https://app.tuco.ai/api-keys)
+2. Click **Download** on any template
+3. Templates are personalized with your API key and domain
+
+<Info>You'll still need to add your CRM credentials (HubSpot, GHL, etc.) in n8n after importing.</Info>
+
+## Import into n8n
+
+1. Open your n8n instance
+2. Go to **Workflows** → **Import from File**
+3. Select the downloaded JSON template
+4. Review the nodes and add missing credentials
+5. Activate the workflow
+
+## Template Structure
+
+### Unified Workflow
+- **Trigger**: Webhook from Tuco (message events)
+- **Router**: Split by event type (sent, reply, fallback)
+- **CRM Update**: Update contact in HubSpot/GHL
+- **Notification**: Post to Slack or send email alert
+- **Fallback**: Trigger SMS via Twilio for non-iPhone contacts
+
+### Flow A — Outbound
+- **Trigger**: New lead added (via webhook or schedule)
+- **Lookup**: Check if lead has iMessage
+- **Send**: Send personalized outreach via Tuco API
+- **Log**: Record send in CRM
+
+### Flow B — Follow-up
+- **Trigger**: Scheduled (daily check)
+- **Filter**: Leads with no reply after 48h
+- **Send**: Follow-up message via Tuco API
+- **Update**: Mark lead as "followed up" in CRM
+
+### Reply Handler
+- **Trigger**: Webhook `message.reply` event
+- **Classify**: AI classification (interested / not interested / question)
+- **Route**: Update CRM tag, notify team, or trigger response
