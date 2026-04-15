@@ -660,9 +660,9 @@
       "get": {
         "operationId": "checkLeadAvailability",
         "summary": "Check iMessage availability for a single lead",
-        "description": "Check if a specific lead is reachable via iMessage. Updates the lead's availability status. Query param `id` = lead ID.",
+        "description": "Check if a specific lead is reachable via iMessage. Checks all stored addresses (phone, email, altPhone1-3, altEmail1-3) and stops at the first available one. Updates the lead's availability status. Query param `id` = lead ID.",
         "tags": ["Leads"],
-        "parameters": [{ "name": "id", "in": "query", "required": true, "description": "Lead ID", "schema": { "type": "string" } }],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "description": "Lead ID", "schema": { "type": "string" }, "example": "667f1f77bcf86cd799439012" }],
         "responses": {
           "200": {
             "description": "Availability result",
@@ -674,30 +674,44 @@
                     "success": { "type": "boolean" },
                     "leadId": { "type": "string" },
                     "available": { "type": "boolean" },
-                    "status": { "type": "string", "enum": ["available", "unavailable", "error"] }
+                    "status": { "type": "string", "enum": ["available", "unavailable", "error"] },
+                    "ghlContactId": { "type": "string", "nullable": true, "description": "GoHighLevel contact ID, if linked" },
+                    "ghlLocationId": { "type": "string", "nullable": true, "description": "GoHighLevel location ID, if linked" },
+                    "hsPortalId": { "type": "string", "nullable": true, "description": "HubSpot portal ID, if linked" },
+                    "hsContactId": { "type": "string", "nullable": true, "description": "HubSpot contact ID, if linked" }
                   }
                 },
                 "examples": {
-                  "available": { "summary": "iMessage available", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": true, "status": "available" } },
-                  "unavailable": { "summary": "iMessage unavailable", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": false, "status": "unavailable" } }
+                  "available": { "summary": "iMessage available", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": true, "status": "available", "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R", "ghlLocationId": "eL7DD22BdZ0rismu7qCA", "hsPortalId": null, "hsContactId": null } },
+                  "unavailable": { "summary": "iMessage unavailable", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": false, "status": "unavailable", "ghlContactId": null, "ghlLocationId": null, "hsPortalId": null, "hsContactId": null } }
                 }
               }
             }
           },
           "400": {
-            "description": "Missing id or server not configured",
+            "description": "Missing id parameter",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "Lead ID is required" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } },
+          "429": {
+            "description": "Rate limit or daily quota exceeded",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" },
                 "examples": {
-                  "idRequired": { "summary": "Lead ID required", "value": { "error": "Lead ID is required" } },
-                  "serverNotConfigured": { "summary": "Availability server not configured", "value": { "error": "Availability check server not configured" } }
+                  "rateLimit": { "summary": "API rate limit (200 req/min)", "value": { "error": "Rate limit exceeded" } },
+                  "dailyQuota": { "summary": "All lines hit daily cap (70/day/line)", "value": { "error": "Daily availability check quota exhausted" } }
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } }
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       },
       "post": {
@@ -748,18 +762,28 @@
             }
           },
           "400": {
-            "description": "Missing address/leadIds or invalid",
+            "description": "Missing workspace",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-                "examples": {
-                  "addressOrLeadIds": { "summary": "address or leadIds required", "value": { "error": "Either address or leadIds is required" } },
-                  "serverNotConfigured": { "summary": "Server not configured", "value": { "error": "Availability check server not configured" } }
-                }
+                "example": { "error": "No active workspace - No orgId" }
               }
             }
           },
           "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "No leads found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No leads found to check" } } } },
+          "429": {
+            "description": "Rate limit or daily quota exceeded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "rateLimit": { "summary": "API rate limit (200 req/min)", "value": { "error": "Rate limit exceeded" } },
+                  "dailyQuota": { "summary": "All lines hit daily cap (70/day/line)", "value": { "error": "Daily availability check quota exhausted" } }
+                }
+              }
+            }
+          },
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       }

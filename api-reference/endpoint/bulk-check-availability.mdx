@@ -17,6 +17,10 @@ This endpoint lets you check iMessage availability for multiple leads at once, o
 
 Use this form to check one phone number or email address without creating a lead.
 
+<Warning>
+The `address` field must be a **non-empty** string. Sending `{ "address": "" }` will not work -- the empty string is ignored and Tuco falls through to the bulk leads path, which will likely return a `404` if you haven't provided `leadIds` or `listId`.
+</Warning>
+
 ```json
 {
   "address": "+12025551234"
