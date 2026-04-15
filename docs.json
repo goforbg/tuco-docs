@@ -114,9 +114,10 @@
           {
             "group": "iMessage Availability",
             "pages": [
+              "api-reference/endpoint/check-availability",
+              "api-reference/endpoint/check-availability-rr",
               "api-reference/endpoint/lead-check-availability",
-              "api-reference/endpoint/bulk-check-availability",
-              "api-reference/endpoint/check-availability-rr"
+              "api-reference/endpoint/bulk-check-availability"
             ]
           },
           {
