@@ -1,0 +1,56 @@
+---
+title: 'Do Not Contact (DNC)'
+description: 'Manage exclusion lists with automatic opt-out detection'
+icon: 'shield-halved'
+---
+
+# Do Not Contact (DNC)
+
+The DNC system prevents messages from being sent to excluded contacts. It includes manual management, automatic opt-out detection, and pre-send blocking.
+
+## Features
+
+- **Manual add/remove** via UI or API
+- **Auto opt-out**: Replies containing STOP, UNSUBSCRIBE, OPT OUT, REMOVE ME, or DO NOT CONTACT are automatically added
+- **Pre-send blocking**: Every message is checked against DNC before sending
+- **Campaign filtering**: DNC contacts are skipped during campaign sends
+- **E.164 normalization**: Phone numbers are normalized for consistent matching
+
+## UI
+
+Navigate to `/dnc` (shield icon in sidebar):
+- Search and filter DNC entries
+- Add by phone or email
+- Remove entries
+- Paginated table view
+
+## API
+
+### List DNC Entries
+
+```bash
+GET /api/dnc?page=1&limit=50&search=904
+```
+
+### Add to DNC
+
+```bash
+POST /api/dnc
+{ "phone": "(904) 295-6129", "reason": "manual" }
+```
+
+Phone is normalized to E.164: `+19042956129`
+
+### Remove from DNC
+
+```bash
+DELETE /api/dnc?id=507f1f77bcf86cd799439011
+```
+
+## Debugging
+
+```
+Loki: {service="app-*"} |= "message.blocked.dnc"
+Loki: {service="app-*"} |= "dnc.send.blocked"
+DB: db.dnc_entries.find({ workspaceId: "org_xxx" })
+```

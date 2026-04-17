@@ -1,0 +1,59 @@
+---
+title: 'Retroactive Conversation Scanner'
+description: 'Find and follow up with dormant leads automatically'
+icon: 'magnifying-glass-clock'
+---
+
+# Retroactive Conversation Scanner
+
+Scan past conversations to identify leads that have gone cold and trigger follow-up actions.
+
+## API
+
+### Scan for Dormant Conversations
+
+```bash
+GET /api/conversations/scan-dormant?days=7&limit=50
+```
+
+Returns conversations where the last message is older than `days` days.
+
+**Response:**
+```json
+{
+  "dormantConversations": [
+    {
+      "recipientPhone": "+19045551234",
+      "lastMessageAt": "2026-04-10T15:30:00Z",
+      "lastMessageDirection": "received",
+      "leadName": "John Smith",
+      "daysSinceLastMessage": 7,
+      "messageCount": 12
+    }
+  ],
+  "total": 23
+}
+```
+
+### Take Action
+
+```bash
+POST /api/conversations/scan-dormant
+{
+  "action": "notify",
+  "conversationIds": ["+19045551234", "+18135551234"]
+}
+```
+
+**Actions:**
+- `notify` — Sends a Telegram summary of dormant leads
+- `draft` — AI drafts personalized follow-ups for each conversation using KB + conversation history
+
+## How Drafts Work
+
+When you trigger `draft`, the scanner:
+1. Fetches the last 10 messages for each conversation
+2. Enqueues a KB auto-reply job with `[DORMANT FOLLOW-UP]` context
+3. The KB worker generates a context-aware follow-up
+4. In copilot mode: draft appears in Telegram for approval
+5. In autopilot mode: sends automatically if confidence is high enough

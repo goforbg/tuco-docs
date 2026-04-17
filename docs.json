@@ -45,10 +45,21 @@
             ]
           },
           {
+            "group": "AI & Automation",
+            "pages": [
+              "features/knowledge-base",
+              "features/language-audit",
+              "features/retroactive-scanner"
+            ]
+          },
+          {
             "group": "Messaging & Compliance",
             "pages": [
               "features/message-templates",
-              "features/compliance-and-optouts"
+              "features/compliance-and-optouts",
+              "features/dnc",
+              "features/spam-monitor",
+              "features/email-bridge"
             ]
           },
           {
@@ -68,11 +79,7 @@
             "group": "Integrations",
             "pages": [
               "integrations/hubspot",
-              "integrations/telegram-bot",
-              "integrations/email-bridge",
-              "integrations/mcp-server",
-              "integrations/webhooks",
-              "integrations/n8n"
+              "features/telegram"
             ]
           },
           {
@@ -114,7 +121,8 @@
             "pages": [
               "api-reference/messages",
               "api-reference/lines",
-              "api-reference/leads"
+              "api-reference/leads",
+              "api-reference/endpoint/check-availability-rr"
             ]
           }
         ]

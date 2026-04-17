@@ -211,5 +211,150 @@ The exact mapping of which properties are updated is controlled by the integrati
   - Never expose Tuco API keys in HubSpot client‑side code or in HubSpot properties visible to end‑users.
   - Keep all credentials server‑side within the integration.
 
-Handled this way, the HubSpot integration becomes a clean, customer‑facing bridge between your CRM and Tuco, built entirely on documented public APIs and without exposing Tuco’s internal implementation to you or to competitors. 
+Handled this way, the HubSpot integration becomes a clean, customer‑facing bridge between your CRM and Tuco, built entirely on documented public APIs and without exposing Tuco’s internal implementation to you or to competitors.
+
+---
+
+## Two-Way Sync (Push Contact)
+
+The integration supports bidirectional contact sync between Tuco and HubSpot.
+
+### Tuco → HubSpot (Push Contact)
+
+When a lead is created or updated in Tuco, the integration pushes the contact to HubSpot:
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://app.tuco.ai/api/integrations/hubspot/push-contact \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d ‘{
+    "leadId": "lead_abc123",
+    "createIfMissing": true
+  }’
+```
+</CodeGroup>
+
+**Behavior:**
+- Matches on phone number (E.164) or email
+- If a HubSpot contact exists, updates it with latest Tuco data
+- If `createIfMissing` is true and no match is found, creates a new HubSpot contact
+- Returns the HubSpot contact ID for reference
+
+### HubSpot → Tuco
+
+Inbound sync happens automatically when:
+- A workflow action triggers a Tuco send (contact data is pulled fresh)
+- The `hubspotFetch` auto-refresh runs on a schedule (see below)
+
+---
+
+## Owner Mapping
+
+Tuco automatically maps HubSpot contact owners to workspace users.
+
+### How It Works
+
+1. When a contact is synced from HubSpot, the integration reads the `hubspot_owner_id` field
+2. It looks up the HubSpot owner’s email address via the HubSpot API
+3. It matches that email to a Tuco workspace member
+4. The matched user is assigned as the lead owner in Tuco
+
+### Configuration
+
+Owner mapping is automatic when workspace member emails match HubSpot owner emails. No manual configuration is needed.
+
+If emails don’t match, you can set up manual mappings in **Integrations** → **HubSpot** → **Owner Mapping**:
+
+| HubSpot Owner | Tuco User |
+|--------------|-----------|
+| `will@4ddd.co.uk` | `will@4ddd.co.uk` |
+| `sales@company.com` | `rep@company.com` |
+
+---
+
+## Custom Properties Sync
+
+Sync custom HubSpot properties to and from Tuco lead fields.
+
+### Supported Tuco → HubSpot Properties
+
+| Tuco Field | HubSpot Property | Direction |
+|-----------|-----------------|-----------|
+| `lastContactedAt` | `tuco_last_contacted` | Tuco → HubSpot |
+| `lastRepliedAt` | `tuco_last_replied` | Tuco → HubSpot |
+| `imessageReachable` | `tuco_imessage_reachable` | Tuco → HubSpot |
+| `messageCount` | `tuco_message_count` | Tuco → HubSpot |
+| `leadStatus` | `tuco_lead_status` | Bidirectional |
+
+### Creating Custom Properties
+
+The integration auto-creates `tuco_*` properties in HubSpot on first sync. You can also create them manually in HubSpot under **Settings** → **Properties** → **Contact Properties**.
+
+### API
+
+```bash
+GET /api/integrations/hubspot/property-mappings
+```
+
+```bash
+POST /api/integrations/hubspot/property-mappings
+{
+  "mappings": [
+    { "tucoField": "customField1", "hubspotProperty": "my_custom_prop", "direction": "bidirectional" }
+  ]
+}
+```
+
+---
+
+## HubSpot Fetch Auto-Refresh
+
+The `hubspotFetch` job keeps Tuco leads in sync with HubSpot contacts on a recurring schedule.
+
+### How It Works
+
+1. A cron job runs every 6 hours (configurable)
+2. It queries HubSpot for contacts modified since the last sync
+3. Updated contact data (name, phone, email, owner, custom properties) is pulled into Tuco
+4. Lead records are updated without overwriting Tuco-specific fields (message history, sequences, etc.)
+
+### Configuration
+
+```bash
+GET /api/integrations/hubspot/sync-config
+```
+
+```json
+{
+  "autoRefreshEnabled": true,
+  "refreshIntervalHours": 6,
+  "lastSyncAt": "2026-04-17T08:00:00Z",
+  "contactsSyncedLastRun": 142
+}
+```
+
+```bash
+POST /api/integrations/hubspot/sync-config
+{
+  "autoRefreshEnabled": true,
+  "refreshIntervalHours": 12
+}
+```
+
+### Manual Trigger
+
+Force an immediate sync:
+
+```bash
+POST /api/integrations/hubspot/sync-now
+```
+
+### Debugging
+
+```
+Loki: {service="workers-*"} |= "hubspot.fetch"
+Loki: {service="workers-*"} |= "hubspot.sync"
+Loki: {service="workers-*"} |= "hubspot.push_contact"
+```
 

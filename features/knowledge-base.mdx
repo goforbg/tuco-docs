@@ -1,0 +1,63 @@
+---
+title: 'Knowledge Base'
+description: 'AI-powered auto-replies with 3 modes: autopilot, copilot, and manual'
+icon: 'brain'
+---
+
+# Knowledge Base
+
+The Knowledge Base powers AI-generated replies to inbound messages. Train it on your website content, FAQs, and call transcripts to handle common questions automatically.
+
+## Three Modes
+
+<CardGroup cols={3}>
+  <Card title="Autopilot" icon="robot">
+    AI sends replies automatically when confidence exceeds your threshold.
+  </Card>
+  <Card title="Copilot" icon="handshake">
+    AI drafts replies and sends them to Telegram for approval before sending.
+  </Card>
+  <Card title="Manual" icon="hand">
+    AI suggests replies in the inbox. You edit and send manually.
+  </Card>
+</CardGroup>
+
+## Setup
+
+1. Navigate to **Knowledge Base** in the sidebar
+2. Click **Add Source** — enter a URL or paste text
+3. Wait for processing (researching → embedding → ready)
+4. Set your preferred mode and confidence threshold
+
+## Conversation History
+
+KB replies include context from the last 10 messages in the conversation. This means:
+- The AI won't repeat information already discussed
+- It understands appointment status, prior objections, and conversation flow
+- Follow-ups are contextually appropriate
+
+## API
+
+<ParamField path="mode" type="string" required>
+  One of: `autopilot`, `copilot`, `manual`
+</ParamField>
+
+<ParamField path="confidenceThreshold" type="number">
+  Minimum confidence score (0-1) for autopilot sends. Default: 0.7
+</ParamField>
+
+### How Confidence Works
+
+```
+confidence = 0.50 * retrieval_score + 0.50 * self_evaluation_score
+```
+
+- **Retrieval score**: How well the KB chunks match the question
+- **Self-evaluation**: Claude's own assessment of answer quality
+
+## Loki Debugging
+
+```
+{service="app-*"} |= "kb.auto_reply.enqueued"
+{service="workers-*"} |= "kb."
+```

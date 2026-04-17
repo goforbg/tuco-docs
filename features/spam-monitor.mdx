@@ -1,0 +1,53 @@
+---
+title: 'Spam Monitoring'
+description: 'Track line health, failure rates, and spam risk in real time'
+icon: 'shield-virus'
+---
+
+# Spam Monitoring
+
+Monitor your lines for spam risk based on delivery failure rates and consecutive failures.
+
+## API
+
+```bash
+GET /api/lines/spam-monitor
+```
+
+**Response:**
+```json
+{
+  "lines": [
+    {
+      "lineId": "abc123",
+      "linePhone": "+19045551234",
+      "lineType": "phone",
+      "totalSentLast24h": 150,
+      "failedLast24h": 3,
+      "failureRate": 2.0,
+      "consecutiveFailures": 0,
+      "spamRisk": "low",
+      "recommendation": "Line is healthy."
+    }
+  ]
+}
+```
+
+## Risk Levels
+
+| Risk | Failure Rate | Action |
+|------|-------------|--------|
+| **Low** | < 5% | No action needed |
+| **Medium** | 5-15% | Reduce send volume by 50%, monitor 24h |
+| **High** | > 15% | Pause campaigns immediately, wait 24-48h |
+
+## Automated Alerts
+
+The health check cron calculates failure rates and logs events to Loki:
+
+```
+Loki: {service="workers-*"} |= "line.spam_risk.high"
+Loki: {service="workers-*"} |= "line.spam_risk.medium"
+```
+
+Line-down email alerts are sent automatically after 7 consecutive failures.

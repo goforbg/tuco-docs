@@ -1,0 +1,48 @@
+---
+title: 'Telegram Integration'
+description: 'Real-time notifications, quick send, and approval workflows via Telegram'
+icon: 'paper-plane'
+---
+
+# Telegram Integration
+
+Connect your workspace to Telegram for real-time notifications, quick message sending, and KB draft approvals.
+
+## Setup
+
+1. Go to **Integrations** → **Telegram**
+2. Click the connect link — opens Telegram
+3. Send `/start` to the bot
+4. Your workspace is now linked
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/whoami` | Shows workspace name, plan, and email |
+| `/send +1234567890 Hello` | Sends an iMessage to the number |
+| `/help` | Lists available commands |
+
+## Notifications
+
+When a lead replies to your message:
+- Telegram notification with contact name + message preview
+- Reply directly in Telegram — your reply is sent as an iMessage
+- KB draft approvals appear as inline buttons: **Approve** / **Edit** / **Reject**
+
+## Dormant Lead Reports
+
+The retroactive scanner can send summaries to Telegram:
+```bash
+POST /api/conversations/scan-dormant
+{ "action": "notify", "conversationIds": [...] }
+```
+
+This sends a formatted list of cold leads directly to your Telegram chat.
+
+## Debugging
+
+```
+Loki: {service="workers-*"} |= "telegram"
+Command: /whoami to verify connection
+```
