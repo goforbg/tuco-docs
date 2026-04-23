@@ -1,0 +1,49 @@
+---
+title: "Telegram Integration"
+description: "Get real-time notifications and reply to leads directly from Telegram"
+icon: "paper-plane"
+---
+
+## What Telegram Does
+
+Connect Telegram to your Tuco workspace for:
+
+- **Real-time reply notifications** with lead name and message preview
+- **Reply directly from Telegram** — your response is sent as an iMessage to the lead
+- **KB copilot drafts** with Approve/Reject buttons
+- **Campaign notifications** and billing events
+
+## Connecting Telegram
+
+1. Go to **Integrations → Telegram**
+2. Click the deep link to open the Tuco bot in Telegram
+3. Send `/start` — your workspace is linked
+
+### Per-Member Linking
+
+Each team member can link their own Telegram account. Reply notifications are routed to the **contact owner's** personal Telegram, not just the workspace channel.
+
+## Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| `/whoami` | Shows workspace name, plan, line count, member count |
+| `/send +1234567890 message` | Send an iMessage directly from Telegram |
+| Reply to notification | Your reply is sent as an iMessage to the lead |
+
+## Knowledge Base Integration
+
+When KB mode is set to **Copilot**:
+1. Lead replies → KB generates a draft
+2. Draft is sent to your Telegram with **Approve** / **Reject** buttons
+3. Tap Approve → reply is sent to the lead
+4. Tap Reject → discard the draft, reply manually
+
+## Notification Routing
+
+| Scenario | Where notification goes |
+|----------|----------------------|
+| Contact owner has Telegram linked | Owner's personal Telegram |
+| No personal link | Workspace Telegram channel |
+| No workspace Telegram | Email only |
+| Global support | Always copied to support channel |

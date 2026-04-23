@@ -1,0 +1,48 @@
+---
+title: "Email Bridge"
+description: "Send iMessages by email — no app or API needed"
+icon: "envelope"
+---
+
+## How Email Bridge Works
+
+Send iMessages by emailing `+phone@send.tuco.ai` from your email client. No app, no API, no setup beyond having a Tuco account.
+
+## Sending a Message
+
+1. Compose an email in Gmail, Outlook, or any email client
+2. Set the **To** field to: `+19042956129@send.tuco.ai`
+3. Write your message in the email body
+4. Hit Send — Tuco sends it as an iMessage and emails you a confirmation
+
+## Email Formats
+
+| Format | Description |
+|--------|-------------|
+| `+19042956129@send.tuco.ai` | Uses your first available active line |
+| `+19042956129-1@send.tuco.ai` | Uses a specific line number (shown on Lines page) |
+
+## Requirements
+
+- Your email must be registered in Tuco (or added to the sender allowlist)
+- Your workspace must have at least one active iMessage line
+- Phone number must be in E.164 format (+country code + number)
+
+## Sender Allowlist
+
+Allow additional email addresses to send via the bridge without a Tuco account:
+
+1. Go to **Integrations → Email Bridge**
+2. Add colleague emails to the allowlist
+3. They can now send iMessages via email
+
+## Error Handling
+
+If something goes wrong, you receive a bounce email:
+
+| Error | Fix |
+|-------|-----|
+| Invalid phone number | Check format: +19042956129 |
+| Not authorized | Your email isn't registered or allowlisted |
+| No active lines | Set up a line at Lines → Purchase |
+| Send failed | Recipient may not have iMessage |

@@ -1,0 +1,47 @@
+---
+title: "Knowledge Base"
+description: "AI-powered auto-replies that handle inbound conversations"
+icon: "brain"
+---
+
+## What the Knowledge Base Does
+
+The Knowledge Base (KB) is Tuco's AI reply engine. When a lead replies to your message, the KB can:
+
+- **Draft a reply** using your business context, FAQs, and conversation history
+- **Send automatically** (Autopilot) or **wait for approval** (Copilot)
+- **Route to the right person** via Telegram and email notifications
+
+## Modes
+
+### Manual
+No AI involvement. Replies are forwarded to the contact owner via Telegram and email. You reply manually from Unibox.
+
+### Copilot
+AI drafts a reply and sends it to the contact owner for approval:
+- Telegram notification with **Approve** / **Reject** buttons
+- Email with the draft and approval link
+- The draft appears in Unibox for editing before sending
+
+### Autopilot
+AI sends the reply automatically without human approval. Use for high-volume, low-risk conversations.
+
+## How It Works
+
+1. Lead replies → message is debounced (60 seconds of silence)
+2. All messages in the batch are combined
+3. KB generates a contextual reply using your uploaded knowledge
+4. **Copilot**: draft sent to owner for approval via Telegram + email
+5. **Autopilot**: reply sent immediately, notification sent to owner
+
+## Notifications
+
+The contact owner receives notifications via:
+- **Telegram** (personal channel if linked, workspace channel as fallback)
+- **Email** (contact owner's email, with support@tuco.ai CC'd)
+
+If the contact owner can't be found, notifications go to the earliest workspace member.
+
+## Daily Limits
+
+Set a max auto-replies per day limit in **Integrations → Telegram → Auto-Reply Limits** (default: 50, max: 500). Once reached, new replies wait until the next day.

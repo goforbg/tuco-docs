@@ -26,7 +26,10 @@
             "pages": [
               "features/upload-leads",
               "features/check-availability",
-              "features/send-messages"
+              "features/send-messages",
+              "features/mcp-server",
+              "features/email-bridge",
+              "features/telegram"
             ]
           },
           {
@@ -66,9 +69,24 @@
             ]
           },
           {
+            "group": "AI & Automation",
+            "pages": [
+              "features/knowledge-base",
+              "features/ai-campaigns",
+              "features/api-tools"
+            ]
+          },
+          {
+            "group": "Lead Management",
+            "pages": [
+              "features/reactivation"
+            ]
+          },
+          {
             "group": "Integrations",
             "pages": [
-              "integrations/hubspot"
+              "integrations/hubspot",
+              "integrations/ghl"
             ]
           },
           {

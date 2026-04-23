@@ -1,0 +1,60 @@
+---
+title: "AI-Powered Campaigns"
+description: "Let AI personalize every message using lead data, conversation history, and your prompts"
+icon: "sparkles"
+---
+
+## AI Message Generation
+
+Instead of writing a fixed template, give the AI a **prompt** describing what to say. The AI generates a unique, personalized message for each lead.
+
+### How It Works
+
+1. In the campaign builder, toggle a step to **AI mode**
+2. Write a prompt:
+   ```
+   Write a friendly follow-up to {firstName} at {companyName}.
+   Mention that we help companies like theirs reduce outreach costs
+   by 60% with iMessage automation. Keep it under 3 sentences.
+   ```
+3. The AI uses the lead's data (name, company, tags, custom fields) to generate a personalized message
+4. Each lead gets a different message — not a template with variables swapped in
+
+### Fallback Safety
+
+Every AI step has a **manual fallback** message. If AI generation fails (rate limit, timeout, model error), the fallback is sent instead. You always have a safety net.
+
+### Cost & Billing
+
+AI message generation is tracked per workspace:
+- Token usage logged to `ai_usage` collection
+- Visible in **Activity Logs → AI Usage** tab
+- Uses GPT-4o-mini by default for cost efficiency
+
+## AI Tools in Campaigns
+
+### Workspace API Tools
+
+Create reusable API integrations that AI can call during message generation:
+
+1. Go to **Integrations → API Tools**
+2. Create a tool (e.g. "Check Credit Score")
+3. Configure: URL, method, headers, body, response mapping
+4. Use in campaigns as variables: `{api_check_credit_score}`
+
+### AI + Branching
+
+Combine AI-generated messages with data-driven branching:
+
+- Step 1: AI sends personalized outreach
+- Branch: Did the lead reply? → Yes path / No path
+- Step 2 (no reply): AI sends a follow-up referencing the original message
+- Branch: Check HubSpot property → Route to different paths based on deal stage
+
+## Testing AI Steps
+
+Use the **Test Conversation** panel to:
+1. Select a real lead
+2. See the actual AI-generated message (real AI call, not simulated)
+3. See the manual fallback below it
+4. Test the full campaign path with real data

@@ -1,0 +1,69 @@
+---
+title: "Workspace API Tools"
+description: "Create reusable API integrations for campaigns, branching, and stop conditions"
+icon: "plug"
+---
+
+## What API Tools Are
+
+Workspace API Tools are saved HTTP requests that Tuco can call during campaign execution. Use them to:
+
+- **Personalize messages** — pull data from your backend into message variables
+- **Branch campaigns** — route leads based on API responses
+- **Stop campaigns** — halt a step if an API returns a specific value
+
+## Creating an API Tool
+
+1. Go to **Integrations → API Tools**
+2. Click **+ Add Tool**
+3. Configure:
+   - **Name** — e.g. "Check DNC Status" (becomes variable `{api_check_dnc_status}`)
+   - **Method** — GET, POST, PUT, PATCH, DELETE
+   - **URL** — supports lead variables: `https://api.example.com/check/{phone}`
+   - **Headers** — authorization, content-type, etc.
+   - **Body** — JSON request body (with validator and format button)
+   - **Response mapping** — dot-path to extract from response (e.g. `data.status`)
+4. **Test** with a real lead to verify it works
+5. **Save**
+
+## URL Variables
+
+Use lead data in the URL or request body:
+
+| Variable | Description |
+|----------|-------------|
+| `{phone}` | Lead's phone number |
+| `{email}` | Lead's email |
+| `{firstName}` | Lead's first name |
+| `{lastName}` | Lead's last name |
+| `{companyName}` | Lead's company name |
+
+## Response Mapping
+
+The dot-path tells Tuco which value to extract from the JSON response:
+
+| API Response | Response Mapping | Extracted Value |
+|-------------|-----------------|-----------------|
+| `{"data":{"status":"active"}}` | `data.status` | `active` |
+| `{"verified": true}` | `verified` | `true` |
+| `{"items":[{"id":1}]}` | `items[0].id` | `1` |
+
+## Using in Campaigns
+
+### As a message variable
+```
+Hey {firstName}, your account status is {api_check_status|active}
+```
+
+### As a branch condition
+Branch on the API result: equals, not equals, or exists.
+
+### As a stop condition
+Stop the campaign step if the API returns a specific value.
+
+## Important Notes
+
+- API tools are **workspace-level** — all team members can use them
+- Calls are made **in real-time** during campaign execution
+- If an API call fails during a branch, the lead takes the **Default** path
+- Test tools before using them in live campaigns
