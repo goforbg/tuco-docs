@@ -865,6 +865,269 @@
         }
       }
     },
+    "/api/goal-bots": {
+      "get": {
+        "operationId": "listGoalBots",
+        "summary": "List Goal Bots",
+        "description": "List all goal bots in the workspace.",
+        "tags": ["Goal Bots"],
+        "responses": {
+          "200": {
+            "description": "List of goal bots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goalBots": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GoalBot" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGoalBot",
+        "summary": "Create Goal Bot",
+        "description": "Create a new goal bot with stages, entry/exit conditions, and settings.",
+        "tags": ["Goal Bots"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateGoalBotRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal bot created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goalBot": { "$ref": "#/components/schemas/GoalBot" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goal-bots/{id}": {
+      "get": {
+        "operationId": "getGoalBot",
+        "summary": "Get Goal Bot",
+        "description": "Get a goal bot by ID with stats.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Goal bot details" } }
+      },
+      "put": {
+        "operationId": "updateGoalBot",
+        "summary": "Update Goal Bot",
+        "description": "Update a goal bot's name, stages, settings, entry/exit conditions.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateGoalBotRequest" } } }
+        },
+        "responses": { "200": { "description": "Goal bot updated" } }
+      },
+      "delete": {
+        "operationId": "archiveGoalBot",
+        "summary": "Archive Goal Bot",
+        "description": "Archives a goal bot (soft delete). Does not delete enrolled leads.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Goal bot archived" } }
+      }
+    },
+    "/api/goal-bots/{id}/enroll": {
+      "post": {
+        "operationId": "enrollLead",
+        "summary": "Enroll Lead in Goal Bot",
+        "description": "Enroll a lead in a goal bot. The lead starts at stage 1. A lead can only be in one goal bot at a time.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string", "description": "The lead ID to enroll" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Lead enrolled" },
+          "400": { "description": "Lead already in a goal bot" }
+        }
+      },
+      "delete": {
+        "operationId": "unenrollLead",
+        "summary": "Unenroll Lead from Goal Bot",
+        "description": "Remove a lead from a goal bot. Clears all goal bot fields on the lead.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Lead unenrolled" } }
+      }
+    },
+    "/api/campaign-tools": {
+      "get": {
+        "operationId": "listWorkspaceTools",
+        "summary": "List Workspace API Tools",
+        "description": "List all saved API tools for the workspace. These can be used in campaign branching, stop conditions, and message variables.",
+        "tags": ["API Tools"],
+        "responses": { "200": { "description": "List of tools" } }
+      },
+      "post": {
+        "operationId": "createOrUpdateTool",
+        "summary": "Create or Update API Tool",
+        "description": "Create a new workspace API tool or update an existing one (pass `id` to update).",
+        "tags": ["API Tools"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "method", "url", "responseMapping"],
+                "properties": {
+                  "id": { "type": "string", "description": "Tool ID (for updates)" },
+                  "name": { "type": "string", "description": "Tool name (e.g. 'Check DNC Status')" },
+                  "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                  "url": { "type": "string", "description": "API URL. Supports {phone}, {email}, {firstName}, {lastName}, {companyName} variables." },
+                  "headers": { "type": "object", "description": "HTTP headers" },
+                  "body": { "type": "string", "description": "Request body (JSON string)" },
+                  "responseMapping": { "type": "string", "description": "Dot-path to extract from JSON response (e.g. 'data.status')" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Tool saved" } }
+      },
+      "delete": {
+        "operationId": "deleteTool",
+        "summary": "Delete API Tool",
+        "description": "Delete a workspace API tool.",
+        "tags": ["API Tools"],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Tool deleted" } }
+      }
+    },
+    "/api/campaign-tools/test": {
+      "post": {
+        "operationId": "testTool",
+        "summary": "Test API Tool",
+        "description": "Execute a workspace API tool against a test lead and return the result.",
+        "tags": ["API Tools"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["toolId"],
+                "properties": {
+                  "toolId": { "type": "string" },
+                  "leadId": { "type": "string", "description": "Optional — test with a specific lead's data" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Tool test result with extracted value and raw response" } }
+      }
+    },
+    "/api/campaigns/evaluate-conditions": {
+      "post": {
+        "operationId": "evaluateConditions",
+        "summary": "Evaluate Campaign Conditions",
+        "description": "Evaluate stop rules and/or branch conditions against a real lead. Makes live API calls to HubSpot, GHL, and custom API tools. Used by the test conversation panel.",
+        "tags": ["Campaigns"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string" },
+                  "stopRules": { "type": "array", "description": "Stop rules to evaluate" },
+                  "branchConditions": { "type": "array", "description": "Branch conditions to evaluate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evaluation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stopResults": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": { "type": "string" },
+                          "type": { "type": "string" },
+                          "result": { "type": "boolean" },
+                          "detail": { "type": "string" }
+                        }
+                      }
+                    },
+                    "branchResults": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "result": { "type": "boolean" },
+                          "detail": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/webhooks": {
       "get": {
         "operationId": "listWebhooks",
@@ -1553,6 +1816,77 @@
           "response": { "type": "string", "description": "Response body from your endpoint" },
           "error": { "type": "string", "description": "Error message (on failure)" },
           "details": { "type": "string", "description": "Error details (on failure)" }
+        }
+      },
+      "GoalBot": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "goal": { "type": "string" },
+          "status": { "type": "string", "enum": ["draft", "active", "paused", "archived"] },
+          "stages": { "type": "array", "items": { "$ref": "#/components/schemas/GoalStage" } },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalEnrolled": { "type": "integer" },
+              "inProgress": { "type": "integer" },
+              "completed": { "type": "integer" },
+              "abandoned": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "GoalStage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "objective": { "type": "string" },
+          "prompt": { "type": "string" },
+          "advanceConditions": { "type": "array" },
+          "exitConditions": { "type": "array" },
+          "maxTurns": { "type": "integer" },
+          "collectFields": { "type": "array" }
+        }
+      },
+      "CreateGoalBotRequest": {
+        "type": "object",
+        "required": ["name", "goal", "stages"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "goal": { "type": "string" },
+          "stages": { "type": "array", "items": { "$ref": "#/components/schemas/GoalStage" } },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "mode": { "type": "string", "enum": ["copilot", "autopilot"] },
+              "tone": { "type": "string", "enum": ["professional", "friendly", "casual"] },
+              "inactivityTimeoutDays": { "type": "integer" }
+            }
+          },
+          "entry": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["manual", "campaign_handoff", "api", "tag_trigger"] },
+              "triggerTag": { "type": "string" }
+            }
+          },
+          "onComplete": {
+            "type": "object",
+            "properties": {
+              "addTag": { "type": "string" },
+              "webhookUrl": { "type": "string" }
+            }
+          },
+          "onAbandon": {
+            "type": "object",
+            "properties": {
+              "addTag": { "type": "string" },
+              "webhookUrl": { "type": "string" }
+            }
+          }
         }
       },
       "ErrorResponse": {

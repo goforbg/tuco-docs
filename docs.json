@@ -161,6 +161,33 @@
               "api-reference/lines",
               "api-reference/leads"
             ]
+          },
+          {
+            "group": "Campaigns",
+            "pages": [
+              "api-reference/endpoint/evaluate-conditions"
+            ]
+          },
+          {
+            "group": "Goal Bots",
+            "pages": [
+              "api-reference/endpoint/list-goal-bots",
+              "api-reference/endpoint/create-goal-bot",
+              "api-reference/endpoint/get-goal-bot",
+              "api-reference/endpoint/update-goal-bot",
+              "api-reference/endpoint/archive-goal-bot",
+              "api-reference/endpoint/enroll-lead",
+              "api-reference/endpoint/unenroll-lead"
+            ]
+          },
+          {
+            "group": "API Tools",
+            "pages": [
+              "api-reference/endpoint/list-tools",
+              "api-reference/endpoint/save-tool",
+              "api-reference/endpoint/delete-tool",
+              "api-reference/endpoint/test-tool"
+            ]
           }
         ]
       }
