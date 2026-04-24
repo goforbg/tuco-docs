@@ -66,11 +66,44 @@ Stop conditions prevent a step from sending if a condition is met:
 | GHL tag | Check a GoHighLevel contact tag |
 | Custom API | Call a workspace API tool and check the result |
 | Lead was contacted before | Tuco has previously sent to this lead |
+| Lead was contacted before (any campaign) | Tuco has sent to this lead in any past campaign |
 | Unsubscribed/DNC | Lead is on the Do Not Contact list |
 
 Stop conditions are evaluated **live** — HubSpot and GHL checks call the real APIs, not stale cached data.
 
 <Note>Stop conditions only apply from step 2 onward. Step 1 always sends (it's the entry point).</Note>
+
+### Condition Operators
+
+When comparing property values in stop conditions and branches, the following operators are available:
+
+| Operator | Label | Use case |
+|----------|-------|----------|
+| `eq` | equals | Exact match |
+| `neq` | not equals | Exclude a value |
+| `contains` | contains | Partial text match |
+| `not_contains` | does not contain | Exclude partial match |
+| `starts_with` | starts with | Prefix match |
+| `gt` | greater than | Numeric comparison |
+| `gte` | greater than or equal | Numeric comparison |
+| `lt` | less than | Numeric comparison |
+| `lte` | less than or equal | Numeric comparison |
+| `gt_date` | after date | Date comparison |
+| `lt_date` | before date | Date comparison |
+| `exists` | exists | Field has a value |
+| `not_exists` | is missing | Field is empty |
+
+## Reply Behavior
+
+Control what happens when a lead replies to your campaign:
+
+### Pause & AI Responder (default)
+Campaign pauses for this lead. The AI Responder handles the conversation.
+
+### Continue + AI Responder in parallel
+Campaign continues to the next step on schedule. AI Responder handles the reply independently. Use for multi-touch drips where follow-ups must go out regardless.
+
+Toggle this in the campaign builder on step 1 under "Reply Behavior."
 
 ## Branching
 
@@ -100,15 +133,18 @@ Steps can be AI-driven instead of using a fixed template:
 
 ## Testing Campaigns
 
-Use the **Test Conversation** panel to simulate the full campaign flow:
+Use the **Test Conversation** panel to simulate the full campaign flow for a real lead:
 
-1. Select a real lead
-2. See each step's message (with real AI generation if AI-driven)
-3. Reply as the lead to test reply handling
-4. Advance time to skip waits ("3 days later →")
-5. See stop conditions evaluated live against real data
-6. See which branch path the lead takes and why
-7. Open the lead in HubSpot/GHL to change data mid-test, then restart
+1. **Select a lead** — uses their real data (name, phone, tags, CRM properties)
+2. **See each step** — AI-generated messages use real AI calls (billed to your usage)
+3. **Reply as the lead** — type what the lead would say to test reply handling
+4. **See stop conditions** — green/red pills show which conditions passed or triggered
+5. **See branches** — click "Evaluate live" to check real HubSpot properties, GHL tags, and custom API calls
+6. **Fast-forward waits** — skip "3 days later" to see what happens next
+7. **Path simulation** — visual timeline showing every step, wait, branch, and the delivery method (iMessage vs SMS fallback)
+8. **CRM links** — open the lead in HubSpot or GHL to change data mid-test, then restart from the header
+
+<Note>AI-generated test messages count toward your AI usage. Use sparingly on expensive models.</Note>
 
 ## API-Only Campaigns
 

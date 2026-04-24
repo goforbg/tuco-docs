@@ -51,10 +51,17 @@ Combine AI-generated messages with data-driven branching:
 - Step 2 (no reply): AI sends a follow-up referencing the original message
 - Branch: Check HubSpot property → Route to different paths based on deal stage
 
-## Testing AI Steps
+## Testing Campaigns
 
-Use the **Test Conversation** panel to:
-1. Select a real lead
-2. See the actual AI-generated message (real AI call, not simulated)
-3. See the manual fallback below it
-4. Test the full campaign path with real data
+The Test Conversation panel lets you simulate the full campaign for a real lead:
+
+1. **Select a lead** — uses their real data (name, phone, tags, CRM properties)
+2. **See each step** — AI-generated messages use real AI calls (billed to your usage)
+3. **Reply as the lead** — type what the lead would say
+4. **See stop conditions** — green/red pills show which conditions passed or triggered
+5. **See branches** — "Evaluate live" checks real HubSpot properties, GHL tags, and custom API calls
+6. **Fast-forward waits** — skip "3 days later" to see what happens next
+7. **Path simulation** — visual timeline showing every step, wait, branch, and the delivery method (iMessage vs SMS)
+8. **CRM links** — open the lead in HubSpot or GHL to change data mid-test, then restart
+
+<Note>AI-generated test messages count toward your AI usage. Use sparingly on expensive models.</Note>

@@ -37,7 +37,8 @@
             "pages": [
               "features/campaigns",
               "features/failures-and-fallbacks",
-              "features/replies"
+              "features/replies",
+              "features/reactions"
             ]
           },
           {
@@ -73,6 +74,7 @@
             "pages": [
               "features/knowledge-base",
               "features/ai-campaigns",
+              "features/goal-bots",
               "features/api-tools"
             ]
           },

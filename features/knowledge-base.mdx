@@ -45,3 +45,31 @@ If the contact owner can't be found, notifications go to the earliest workspace 
 ## Daily Limits
 
 Set a max auto-replies per day limit in **Integrations → Telegram → Auto-Reply Limits** (default: 50, max: 500). Once reached, new replies wait until the next day.
+
+## Multi-Bubble Replies
+
+The AI Responder sends replies as multiple short iMessage bubbles instead of one long message. This looks more natural:
+
+- Replies split into 2-4 short messages
+- Typing indicator ("...") appears between each bubble
+- 1-3 second delay between bubbles (based on message length)
+- All gaps and throttles bypassed for AI replies — leads don't wait 30 seconds between bubbles
+
+## Reactions
+
+The AI Responder detects iMessage reactions (tapbacks) and does NOT treat them as messages:
+- Heart, thumbs up/down, laugh, emphasize, question, and custom emoji reactions are recognized
+- No AI call is wasted on reactions
+- No notifications sent for reactions
+
+## Voice Notes
+
+When a lead sends a voice note:
+- Audio file is downloaded and stored
+- Displayed as an audio player in Unibox
+- Optional: transcribe via Whisper AI (enable in workspace settings)
+- Transcription passed to AI Responder as the inbound message
+
+## Goal Bot Integration
+
+When a lead is enrolled in a Goal Bot, the AI Responder uses the goal bot's stage-specific prompt instead of generic knowledge base search. See [Goal Bots](/features/goal-bots) for details.

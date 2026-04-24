@@ -82,3 +82,23 @@ Map GHL custom fields to Tuco tags or custom fields.
 - **GHL property** — branch on custom field values
 
 All GHL checks call the **live GHL API**, not cached data.
+
+### Available operators
+
+When comparing GHL property values in stop conditions or branches, all standard operators are supported:
+
+| Operator | Label | Use case |
+|----------|-------|----------|
+| `eq` | equals | Exact match |
+| `neq` | not equals | Exclude a value |
+| `contains` | contains | Partial text match |
+| `not_contains` | does not contain | Exclude partial match |
+| `starts_with` | starts with | Prefix match |
+| `gt` / `gte` | greater than (or equal) | Numeric comparison |
+| `lt` / `lte` | less than (or equal) | Numeric comparison |
+| `gt_date` / `lt_date` | after / before date | Date comparison |
+| `exists` / `not_exists` | exists / is missing | Check if field has a value |
+
+### Goal Bot integration
+
+GHL tags and custom fields can be used as advance or exit conditions in [Goal Bots](/features/goal-bots). When a Goal Bot checks GHL data, it calls the live API — the same way campaigns do.
