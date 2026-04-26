@@ -4,6 +4,14 @@ api: "POST /api/campaigns/{id}/leads"
 description: "Add a lead to a specific campaign and start that lead through the sequence"
 ---
 
+{/* SYNC_API_DOCS: This docs page must stay in sync with:
+     - tuco-app/src/components/ApiInstructions.tsx (shared UI component)
+     - tuco-app/src/app/api/campaigns/[id]/leads/route.ts (actual endpoint)
+     - tuco-app/src/lib/apiRateLimiter.ts RATE_LIMIT_PRESETS.addToCampaign (rate limit: 200/min)
+     - tuco-app/src/lib/leadIdentifiers.ts (dedup logic)
+   When changing fields, dedup rules, or rate limits, update ALL of these files.
+   grep for SYNC_API_DOCS across all tuco repos to find every location. */}
+
 ## Endpoint
 
 - **Method**: `POST`  

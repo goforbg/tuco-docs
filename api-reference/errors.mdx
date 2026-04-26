@@ -160,6 +160,14 @@ Only `4xx` and `5xx` responses indicate actual errors.
 
 ---
 
+{/* SYNC_API_DOCS: Rate limit table must stay in sync with:
+     - tuco-app/src/lib/apiRateLimiter.ts RATE_LIMIT_PRESETS (enforcement)
+     - tuco-app/src/lib/availabilityThrottle.ts (daily caps, device gaps)
+     - tuco-app/src/lib/messageSender.ts (daily line limits)
+     - tuco-app/src/app/integrations/page.tsx (API Reference table in UI)
+     - tuco-app/src/components/ApiInstructions.tsx (shared API docs component)
+   grep for SYNC_API_DOCS across all tuco repos to find every location. */}
+
 ## Rate limits
 
 Tuco applies per-workspace rate limits to protect the platform. When you hit
