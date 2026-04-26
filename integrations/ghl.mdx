@@ -1,0 +1,104 @@
+---
+title: "GoHighLevel Integration"
+description: "Sync contacts, map owners, and use GHL data in campaigns"
+icon: "bolt"
+---
+
+## What You Get
+
+- **Contact sync** — Import GHL contacts into Tuco with deduplication
+- **Owner mapping** — Map GHL users to Tuco team members
+- **Tag sync** — GHL contact tags imported automatically
+- **Custom field sync** — Map GHL custom fields to Tuco custom fields or tags
+- **Campaign conditions** — Use GHL tags in campaign branching and stop conditions
+
+## Connecting GoHighLevel
+
+1. Go to **Integrations → CRM**
+2. Enter your GHL **API key** and **Location ID**
+3. Click **Test & Connect**
+4. A full sync starts automatically
+
+<Note>Only one CRM can be connected at a time. Disconnect HubSpot before connecting GHL.</Note>
+
+### Required API scopes
+
+- Location access
+- Contacts: search and read
+- Tags: read location tags
+
+### Recommended scopes
+
+- Users: read (for owner mapping)
+- Custom fields: read (for field mapping)
+- Contact tags: add/remove (for campaign automation)
+- Conversations: create (for activity logging)
+
+## Contact Sync
+
+### How it works
+
+- **First sync** — imports all GHL contacts into a "GHL Import" list
+- **Incremental sync** — every 15 minutes, syncs recently modified contacts
+- **Deduplication** — matched by phone number
+- **Tags** — GHL contact tags are imported into Tuco's tag system
+
+### What syncs
+
+| GHL Field | Tuco Field |
+|-----------|------------|
+| firstName | First Name |
+| lastName | Last Name |
+| email | Email |
+| phone | Phone |
+| companyName | Company |
+| tags | Tags |
+| assignedTo | Owner (via mapping) |
+
+## Owner Mapping
+
+Same as HubSpot — map GHL users to Tuco members.
+
+1. **Integrations → CRM → Owner Mapping**
+2. Map each GHL user to a Tuco member
+3. **Save & Re-sync**
+
+## Custom Field Mapping
+
+Map GHL custom fields to Tuco tags or custom fields.
+
+1. **Integrations → CRM → Property Mapping**
+2. Select a GHL custom field
+3. Choose Tag or Custom Field target
+4. **Save & Re-sync**
+
+## Using GHL Data in Campaigns
+
+### Stop conditions
+- **GHL tag** — stop if contact has/doesn't have a tag (live API call)
+
+### Branching
+- **GHL has tag** — branch based on GHL tags (live API call)
+- **GHL property** — branch on custom field values
+
+All GHL checks call the **live GHL API**, not cached data.
+
+### Available operators
+
+When comparing GHL property values in stop conditions or branches, all standard operators are supported:
+
+| Operator | Label | Use case |
+|----------|-------|----------|
+| `eq` | equals | Exact match |
+| `neq` | not equals | Exclude a value |
+| `contains` | contains | Partial text match |
+| `not_contains` | does not contain | Exclude partial match |
+| `starts_with` | starts with | Prefix match |
+| `gt` / `gte` | greater than (or equal) | Numeric comparison |
+| `lt` / `lte` | less than (or equal) | Numeric comparison |
+| `gt_date` / `lt_date` | after / before date | Date comparison |
+| `exists` / `not_exists` | exists / is missing | Check if field has a value |
+
+### Goal Bot integration
+
+GHL tags and custom fields can be used as advance or exit conditions in [Goal Bots](/features/goal-bots). When a Goal Bot checks GHL data, it calls the live API — the same way campaigns do.

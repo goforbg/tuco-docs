@@ -1,0 +1,141 @@
+---
+title: "Check iMessage Availability (Round-Robin)"
+description: "Check if a phone or email has iMessage, using round-robin across your lines"
+api: "POST /api/check-availability-rr"
+---
+
+## Overview
+
+Round-robin iMessage availability check across your workspace's eligible lines.
+Returns whether any of the provided phone numbers or emails are registered on iMessage.
+
+<Warning>
+**70 checks/day per line (hard cap).** Each line can perform up to 70 availability
+checks per day. With 3 lines you get 210 total. When all lines are exhausted,
+you receive a `429` with `Retry-After: 3600`.
+
+**Recommended:** Skip this endpoint entirely. Instead, call `POST /api/messages`
+directly and listen for the `message.fallback` webhook to trigger your SMS/WhatsApp
+fallback. This avoids burning your daily availability quota. See
+[Integration Patterns](#recommended-pattern-send--fallback-webhook) below.
+</Warning>
+
+---
+
+## Request
+
+<ParamField body="phones" type="string[]">
+  Array of phone numbers to check (checked first, in order).
+</ParamField>
+
+<ParamField body="emails" type="string[]">
+  Array of email addresses to check (checked after phones).
+</ParamField>
+
+```bash
+curl -X POST https://app.tuco.ai/api/check-availability-rr \
+  -H "Authorization: Bearer tuco_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phones": ["+14155551234"],
+    "emails": ["frank@example.com"]
+  }'
+```
+
+---
+
+## Response
+
+### Available
+
+```json
+{
+  "available": true
+}
+```
+
+### Not Available
+
+```json
+{
+  "available": false,
+  "reason": "Contact not available on iMessage"
+}
+```
+
+### Quota Exhausted (429)
+
+```json
+{
+  "available": false,
+  "reason": "Daily availability check quota exhausted"
+}
+```
+
+---
+
+## Rate Limits
+
+| Limit | Value |
+|-------|-------|
+| API rate limit | **200 req/min** per workspace |
+| Daily cap | **70 checks/day per line** |
+| Device gap | **3 seconds** between checks on the same physical device |
+
+<Note>
+Availability checks do **not** consume your daily send quota. Send limits and
+availability limits are tracked separately in Redis.
+</Note>
+
+---
+
+## Recommended Pattern: Send + Fallback Webhook
+
+Instead of checking availability first, just send via `POST /api/messages` and
+handle the `message.fallback` webhook to trigger your SMS or WhatsApp fallback.
+
+**Why this is better:**
+- No availability quota consumed (saves your 70/day/line cap)
+- One API call instead of two
+- Webhook-driven fallback is reliable and async
+- Works even when availability quota is exhausted
+
+```python
+# Step 1: Just send. Don't check availability first.
+resp = requests.post("https://app.tuco.ai/api/messages", headers=headers, json={
+    "message": "Hey, quick question about your demo.",
+    "recipientPhone": "+14155551234",
+    "recipientName": "Frank"
+})
+
+# Step 2: Handle webhooks on your server
+@app.post("/tuco-webhook")
+def handle(request):
+    event = request.json["event"]
+
+    if event == "message.sent":
+        pass  # iMessage delivered
+
+    elif event == "message.fallback":
+        # No iMessage — trigger WhatsApp/SMS fallback
+        phone = request.json["message"]["recipientPhone"]
+        send_whatsapp(phone)
+
+    elif event == "message.reply":
+        reply_text = request.json["message"]  # string
+        notify_team(request.json["leadId"], reply_text)
+
+    return {"ok": True}
+```
+
+---
+
+## Error Codes
+
+| Code | When | Body |
+|------|------|------|
+| 400 | No phones or emails provided | `{ "available": false, "reason": "No phone or email addresses provided" }` |
+| 401 | Bad API key | `{ "error": "Unauthorized" }` |
+| 429 | API rate limit hit | `{ "error": "Rate limit exceeded" }` |
+| 429 | Daily cap exhausted | `{ "available": false, "reason": "Daily availability check quota exhausted" }` |
+| 500 | Server error | `{ "error": "Internal server error" }` |

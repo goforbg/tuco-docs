@@ -1,0 +1,127 @@
+---
+title: "Cancel Pending Messages"
+api: "POST /api/messages/cancel-for-lead"
+description: "Cancel all pending, scheduled, and queued messages for a lead — use when a lead replies Stop or opts out"
+---
+
+<Note>
+Call this endpoint when a lead replies "Stop", "Unsubscribe", or any opt-out keyword. It cancels **all** pending, scheduled, and queued messages for that lead and removes their jobs from the processing queue.
+</Note>
+
+## Authentication
+
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+## Request body
+
+You must provide **at least one** of these identifiers:
+
+<ParamField body="leadId" type="string">
+  Cancel all pending messages for this lead ID. Most direct — skips the lookup step.
+</ParamField>
+
+<ParamField body="recipientPhone" type="string">
+  Phone number (E.164 format). Tuco looks up the lead by phone (including altPhone1-3), then cancels all pending messages for that lead. If no lead is found, cancels messages matching this phone directly.
+</ParamField>
+
+<ParamField body="recipientEmail" type="string">
+  Email address. Tuco looks up the lead by email (including altEmail1-3), then cancels all pending messages for that lead. If no lead is found, cancels messages matching this email directly.
+</ParamField>
+
+---
+
+## How it works
+
+<Steps>
+  <Step title="Identify the lead">
+    If `leadId` is provided, use it directly. Otherwise, look up the lead by `recipientPhone` or `recipientEmail` (checks primary + alt fields).
+  </Step>
+  <Step title="Find cancellable messages">
+    Query all messages for this lead (or address) with status `queued`, `pending`, or `scheduled`.
+  </Step>
+  <Step title="Cancel in database">
+    Bulk update all matching messages to `status: "cancelled"`.
+  </Step>
+  <Step title="Remove from queue">
+    Remove each message's BullMQ processing job so it won't be picked up by the worker.
+  </Step>
+</Steps>
+
+---
+
+## Examples
+
+<CodeGroup>
+
+```bash Cancel by phone
+curl -X POST "https://app.tuco.ai/api/messages/cancel-for-lead" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "recipientPhone": "+14422646782" }'
+```
+
+```bash Cancel by email
+curl -X POST "https://app.tuco.ai/api/messages/cancel-for-lead" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "recipientEmail": "john@example.com" }'
+```
+
+```bash Cancel by lead ID
+curl -X POST "https://app.tuco.ai/api/messages/cancel-for-lead" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "leadId": "69b2c41d352a78479d2c623b" }'
+```
+
+</CodeGroup>
+
+---
+
+## Success response (200)
+
+```json
+{
+  "success": true,
+  "cancelledCount": 3,
+  "jobsRemovedFromQueue": 2,
+  "leadId": "69b2c41d352a78479d2c623b",
+  "messageIds": [
+    "69dba0001111111111111111",
+    "69dba0001111111111111112",
+    "69dba0001111111111111113"
+  ]
+}
+```
+
+<ResponseField name="success" type="boolean">Always `true` on success (even when 0 messages cancelled).</ResponseField>
+<ResponseField name="cancelledCount" type="integer">Number of messages set to `cancelled` in the database.</ResponseField>
+<ResponseField name="jobsRemovedFromQueue" type="integer">Number of BullMQ jobs removed. May be less than `cancelledCount` if some jobs already started processing.</ResponseField>
+<ResponseField name="leadId" type="string">The resolved lead ID (may be `null` if no lead was found and cancellation was done by address).</ResponseField>
+<ResponseField name="messageIds" type="string[]">IDs of all cancelled messages.</ResponseField>
+
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | No identifier provided | `{ "error": "Either leadId, recipientPhone, or recipientEmail is required" }` |
+| `400` | Invalid `leadId` format | `{ "error": "Invalid leadId" }` |
+| `401` | Missing or invalid API key | `{ "error": "Unauthorized" }` |
+| `500` | Server error | `{ "error": "Internal server error" }` |
+
+---
+
+## Usage with n8n / automation
+
+Wire this into your reply handler workflow. When a lead replies with an opt-out keyword, call this endpoint with their phone number to stop all future sequence messages:
+
+```json
+{
+  "method": "POST",
+  "url": "https://app.tuco.ai/api/messages/cancel-for-lead",
+  "headers": { "Authorization": "Bearer tuco_sk_xxxxxxxxxxxxx" },
+  "body": { "recipientPhone": "{{ $json.phone }}" }
+}
+```

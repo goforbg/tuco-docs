@@ -1,0 +1,57 @@
+---
+title: "MCP Server"
+description: "Connect AI assistants like Claude, Cursor, and Windsurf to your Tuco workspace"
+icon: "robot"
+---
+
+## What is the Tuco MCP Server?
+
+The Model Context Protocol (MCP) server lets AI assistants control your Tuco workspace using natural language. Works with Claude Desktop, Cursor, Windsurf, and any MCP-compatible client.
+
+## Installation
+
+```bash
+npx @tuco-ai/mcp-server
+```
+
+## Configuration
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "tuco": {
+      "command": "npx",
+      "args": ["@tuco-ai/mcp-server"],
+      "env": {
+        "TUCO_API_KEY": "tuco_your_api_key"
+      }
+    }
+  }
+}
+```
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `send-imessage` | Send an iMessage to any phone number |
+| `add-lead` | Add a new contact to your workspace |
+| `check-imessage` | Check if a number has iMessage |
+| `lines-health` | Monitor all sending line health status |
+| `check-limits` | View line limits and current usage |
+| `check-replies` | List recent unread replies |
+| `list-campaigns` | View campaigns with status and stats |
+| `check-health` | Verify API connection status |
+
+## Example Prompts
+
+- "Send an iMessage to +12125551234 saying Hey, wanted to follow up"
+- "How are my sending lines doing?"
+- "Show me the last 5 unread replies"
+- "Add a lead: John Doe, +15551234567, CEO at Acme Corp"
+
+## Getting Your API Key
+
+Get your API key from **Integrations → API Keys** in the Tuco dashboard, or at [app.tuco.ai/integrations](https://app.tuco.ai/integrations).

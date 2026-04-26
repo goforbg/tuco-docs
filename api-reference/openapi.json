@@ -459,6 +459,18 @@
                       "companyName": "Acme Inc"
                     }
                   }
+                },
+                "newLeadWithGhl": {
+                  "summary": "Create lead with GHL contact ID for deterministic linking",
+                  "value": {
+                    "lead": {
+                      "firstName": "Jane",
+                      "phone": "+12025551234",
+                      "email": "jane@example.com",
+                      "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                      "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                    }
+                  }
                 }
               }
             }
@@ -562,10 +574,15 @@
                     {
                       "leadId": "69b2c41d352a78479d2c623b",
                       "messageId": "69b340dd6dae1d942ece4d09",
+                      "message": "Stop",
                       "respondedAtUtc": "2026-03-12T22:40:29.174Z",
                       "recipientPhone": "+919042956129",
                       "recipientEmail": "goforbg@icloud.com",
                       "name": "BG Real",
+                      "recentReplies": [
+                        { "messageId": "69b340dd6dae1d942ece4d09", "message": "Stop", "receivedAtUtc": "2026-03-12T22:40:29.174Z" },
+                        { "messageId": "69b33fdd6dae1d942ece4d08", "message": "Thanks for reaching out", "receivedAtUtc": "2026-03-12T21:15:00.000Z" }
+                      ],
                       "parentMessages": [
                         { "messageId": "69b344bc6dae1d942ece4d0e", "message": "Here's your document.", "sentAtUtc": "2026-03-12T22:57:02.892Z", "batchId": null, "stepIndex": null }
                       ]
@@ -655,9 +672,9 @@
       "get": {
         "operationId": "checkLeadAvailability",
         "summary": "Check iMessage availability for a single lead",
-        "description": "Check if a specific lead is reachable via iMessage. Updates the lead's availability status. Query param `id` = lead ID.",
+        "description": "Check if a specific lead is reachable via iMessage. Checks all stored addresses (phone, email, altPhone1-3, altEmail1-3) and stops at the first available one. Updates the lead's availability status. Query param `id` = lead ID.",
         "tags": ["Leads"],
-        "parameters": [{ "name": "id", "in": "query", "required": true, "description": "Lead ID", "schema": { "type": "string" } }],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "description": "Lead ID", "schema": { "type": "string" }, "example": "667f1f77bcf86cd799439012" }],
         "responses": {
           "200": {
             "description": "Availability result",
@@ -669,30 +686,44 @@
                     "success": { "type": "boolean" },
                     "leadId": { "type": "string" },
                     "available": { "type": "boolean" },
-                    "status": { "type": "string", "enum": ["available", "unavailable", "error"] }
+                    "status": { "type": "string", "enum": ["available", "unavailable", "error"] },
+                    "ghlContactId": { "type": "string", "nullable": true, "description": "GoHighLevel contact ID, if linked" },
+                    "ghlLocationId": { "type": "string", "nullable": true, "description": "GoHighLevel location ID, if linked" },
+                    "hsPortalId": { "type": "string", "nullable": true, "description": "HubSpot portal ID, if linked" },
+                    "hsContactId": { "type": "string", "nullable": true, "description": "HubSpot contact ID, if linked" }
                   }
                 },
                 "examples": {
-                  "available": { "summary": "iMessage available", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": true, "status": "available" } },
-                  "unavailable": { "summary": "iMessage unavailable", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": false, "status": "unavailable" } }
+                  "available": { "summary": "iMessage available", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": true, "status": "available", "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R", "ghlLocationId": "eL7DD22BdZ0rismu7qCA", "hsPortalId": null, "hsContactId": null } },
+                  "unavailable": { "summary": "iMessage unavailable", "value": { "success": true, "leadId": "69b2c41d352a78479d2c623b", "available": false, "status": "unavailable", "ghlContactId": null, "ghlLocationId": null, "hsPortalId": null, "hsContactId": null } }
                 }
               }
             }
           },
           "400": {
-            "description": "Missing id or server not configured",
+            "description": "Missing id parameter",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "Lead ID is required" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } },
+          "429": {
+            "description": "Rate limit or daily quota exceeded",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" },
                 "examples": {
-                  "idRequired": { "summary": "Lead ID required", "value": { "error": "Lead ID is required" } },
-                  "serverNotConfigured": { "summary": "Availability server not configured", "value": { "error": "Availability check server not configured" } }
+                  "rateLimit": { "summary": "API rate limit (200 req/min)", "value": { "error": "Rate limit exceeded" } },
+                  "dailyQuota": { "summary": "All lines hit daily cap (70/day/line)", "value": { "error": "Daily availability check quota exhausted" } }
                 }
               }
             }
           },
-          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
-          "404": { "description": "Lead not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Lead not found" } } } }
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
         }
       },
       "post": {
@@ -743,19 +774,634 @@
             }
           },
           "400": {
-            "description": "Missing address/leadIds or invalid",
+            "description": "Missing workspace",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": "No active workspace - No orgId" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "No leads found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No leads found to check" } } } },
+          "429": {
+            "description": "Rate limit or daily quota exceeded",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ErrorResponse" },
                 "examples": {
-                  "addressOrLeadIds": { "summary": "address or leadIds required", "value": { "error": "Either address or leadIds is required" } },
-                  "serverNotConfigured": { "summary": "Server not configured", "value": { "error": "Availability check server not configured" } }
+                  "rateLimit": { "summary": "API rate limit (200 req/min)", "value": { "error": "Rate limit exceeded" } },
+                  "dailyQuota": { "summary": "All lines hit daily cap (70/day/line)", "value": { "error": "Daily availability check quota exhausted" } }
+                }
+              }
+            }
+          },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/messages/cancel-for-lead": {
+      "post": {
+        "operationId": "cancelForLead",
+        "summary": "Cancel pending messages for a lead",
+        "description": "Cancel all pending, scheduled, and queued messages for a specific lead. Useful when a lead replies \"Stop\" or opts out mid-sequence. Accepts `leadId`, `recipientPhone`, or `recipientEmail` — at least one is required. When only a phone or email is provided, Tuco looks up the lead first, then falls back to cancelling by address on messages directly.",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CancelForLeadRequest" },
+              "examples": {
+                "byLeadId": {
+                  "summary": "Cancel by lead ID",
+                  "value": { "leadId": "69b2c41d352a78479d2c623b" }
+                },
+                "byPhone": {
+                  "summary": "Cancel by phone (no lead ID needed)",
+                  "value": { "recipientPhone": "+14422646782" }
+                },
+                "byEmail": {
+                  "summary": "Cancel by email",
+                  "value": { "recipientEmail": "john@example.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cancellation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CancelForLeadResponse" },
+                "examples": {
+                  "cancelled": {
+                    "summary": "Messages cancelled",
+                    "value": {
+                      "success": true,
+                      "cancelledCount": 3,
+                      "jobsRemovedFromQueue": 2,
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageIds": ["69dba0001111111111111111", "69dba0001111111111111112", "69dba0001111111111111113"]
+                    }
+                  },
+                  "noPending": {
+                    "summary": "No pending messages",
+                    "value": {
+                      "success": true,
+                      "cancelledCount": 0,
+                      "jobsRemovedFromQueue": 0,
+                      "leadId": "69b2c41d352a78479d2c623b",
+                      "messageIds": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "noIdentifier": { "summary": "No identifier provided", "value": { "error": "Either leadId, recipientPhone, or recipientEmail is required" } },
+                  "invalidLeadId": { "summary": "Invalid leadId", "value": { "error": "Invalid leadId" } },
+                  "noWorkspace": { "summary": "No active workspace", "value": { "error": "No active workspace" } }
                 }
               }
             }
           },
           "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
           "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Internal server error" } } } }
+        }
+      }
+    },
+    "/api/goal-bots": {
+      "get": {
+        "operationId": "listGoalBots",
+        "summary": "List Goal Bots",
+        "description": "List all goal bots in the workspace.",
+        "tags": ["Goal Bots"],
+        "responses": {
+          "200": {
+            "description": "List of goal bots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goalBots": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/GoalBot" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGoalBot",
+        "summary": "Create Goal Bot",
+        "description": "Create a new goal bot with stages, entry/exit conditions, and settings.",
+        "tags": ["Goal Bots"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateGoalBotRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Goal bot created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "goalBot": { "$ref": "#/components/schemas/GoalBot" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/goal-bots/{id}": {
+      "get": {
+        "operationId": "getGoalBot",
+        "summary": "Get Goal Bot",
+        "description": "Get a goal bot by ID with stats.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Goal bot details" } }
+      },
+      "put": {
+        "operationId": "updateGoalBot",
+        "summary": "Update Goal Bot",
+        "description": "Update a goal bot's name, stages, settings, entry/exit conditions.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateGoalBotRequest" } } }
+        },
+        "responses": { "200": { "description": "Goal bot updated" } }
+      },
+      "delete": {
+        "operationId": "archiveGoalBot",
+        "summary": "Archive Goal Bot",
+        "description": "Archives a goal bot (soft delete). Does not delete enrolled leads.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Goal bot archived" } }
+      }
+    },
+    "/api/goal-bots/{id}/enroll": {
+      "post": {
+        "operationId": "enrollLead",
+        "summary": "Enroll Lead in Goal Bot",
+        "description": "Enroll a lead in a goal bot. The lead starts at stage 1. A lead can only be in one goal bot at a time.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string", "description": "The lead ID to enroll" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Lead enrolled" },
+          "400": { "description": "Lead already in a goal bot" }
+        }
+      },
+      "delete": {
+        "operationId": "unenrollLead",
+        "summary": "Unenroll Lead from Goal Bot",
+        "description": "Remove a lead from a goal bot. Clears all goal bot fields on the lead.",
+        "tags": ["Goal Bots"],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Lead unenrolled" } }
+      }
+    },
+    "/api/campaign-tools": {
+      "get": {
+        "operationId": "listWorkspaceTools",
+        "summary": "List Workspace API Tools",
+        "description": "List all saved API tools for the workspace. These can be used in campaign branching, stop conditions, and message variables.",
+        "tags": ["API Tools"],
+        "responses": { "200": { "description": "List of tools" } }
+      },
+      "post": {
+        "operationId": "createOrUpdateTool",
+        "summary": "Create or Update API Tool",
+        "description": "Create a new workspace API tool or update an existing one (pass `id` to update).",
+        "tags": ["API Tools"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "method", "url", "responseMapping"],
+                "properties": {
+                  "id": { "type": "string", "description": "Tool ID (for updates)" },
+                  "name": { "type": "string", "description": "Tool name (e.g. 'Check DNC Status')" },
+                  "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+                  "url": { "type": "string", "description": "API URL. Supports {phone}, {email}, {firstName}, {lastName}, {companyName} variables." },
+                  "headers": { "type": "object", "description": "HTTP headers" },
+                  "body": { "type": "string", "description": "Request body (JSON string)" },
+                  "responseMapping": { "type": "string", "description": "Dot-path to extract from JSON response (e.g. 'data.status')" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Tool saved" } }
+      },
+      "delete": {
+        "operationId": "deleteTool",
+        "summary": "Delete API Tool",
+        "description": "Delete a workspace API tool.",
+        "tags": ["API Tools"],
+        "parameters": [{ "name": "id", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Tool deleted" } }
+      }
+    },
+    "/api/campaign-tools/test": {
+      "post": {
+        "operationId": "testTool",
+        "summary": "Test API Tool",
+        "description": "Execute a workspace API tool against a test lead and return the result.",
+        "tags": ["API Tools"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["toolId"],
+                "properties": {
+                  "toolId": { "type": "string" },
+                  "leadId": { "type": "string", "description": "Optional — test with a specific lead's data" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Tool test result with extracted value and raw response" } }
+      }
+    },
+    "/api/campaigns/evaluate-conditions": {
+      "post": {
+        "operationId": "evaluateConditions",
+        "summary": "Evaluate Campaign Conditions",
+        "description": "Evaluate stop rules and/or branch conditions against a real lead. Makes live API calls to HubSpot, GHL, and custom API tools. Used by the test conversation panel.",
+        "tags": ["Campaigns"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["leadId"],
+                "properties": {
+                  "leadId": { "type": "string" },
+                  "stopRules": { "type": "array", "description": "Stop rules to evaluate" },
+                  "branchConditions": { "type": "array", "description": "Branch conditions to evaluate" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Evaluation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stopResults": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ruleId": { "type": "string" },
+                          "type": { "type": "string" },
+                          "result": { "type": "boolean" },
+                          "detail": { "type": "string" }
+                        }
+                      }
+                    },
+                    "branchResults": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": { "type": "string" },
+                          "result": { "type": "boolean" },
+                          "detail": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks": {
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List webhooks",
+        "description": "List all webhooks registered in the current workspace. Secrets are never returned.",
+        "tags": ["Webhooks"],
+        "responses": {
+          "200": {
+            "description": "Webhook list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ListWebhooksResponse" },
+                "example": {
+                  "webhooks": [
+                    {
+                      "id": "680a1b2c3d4e5f6789012345",
+                      "url": "https://example.com/webhooks/tuco",
+                      "events": ["message.sent", "message.failed", "message.reply"],
+                      "name": "Production webhook",
+                      "description": "Sends events to our CRM",
+                      "isActive": true,
+                      "lastTriggeredAt": "2026-04-12T10:30:00.000Z",
+                      "lastSuccessAt": "2026-04-12T10:30:00.000Z",
+                      "lastFailureAt": null,
+                      "failureCount": 0,
+                      "createdAt": "2026-03-01T00:00:00.000Z",
+                      "updatedAt": "2026-04-12T10:30:00.000Z"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "400": { "description": "No active workspace", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "No active workspace" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Create webhook",
+        "description": "Register a new webhook endpoint. The signing secret is returned **once** in the response — save it immediately. You won't be able to retrieve it again.",
+        "tags": ["Webhooks"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateWebhookRequest" },
+              "examples": {
+                "allEvents": {
+                  "summary": "Subscribe to all events",
+                  "value": {
+                    "url": "https://example.com/webhooks/tuco",
+                    "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+                    "name": "Production webhook"
+                  }
+                },
+                "repliesOnly": {
+                  "summary": "Replies only",
+                  "value": {
+                    "url": "https://example.com/webhooks/replies",
+                    "events": ["message.reply"],
+                    "name": "Reply listener",
+                    "description": "Forwards replies to Slack"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook created. Secret is returned **once** — save it now.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateWebhookResponse" },
+                "example": {
+                  "id": "680a1b2c3d4e5f6789012345",
+                  "secret": "dGhpcyBpcyBhIHNhbXBsZSBzZWNyZXQ=",
+                  "url": "https://example.com/webhooks/tuco",
+                  "events": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"],
+                  "name": "Production webhook",
+                  "description": null,
+                  "createdAt": "2026-04-12T12:00:00.000Z",
+                  "warning": "Save this secret now. You will not be able to see it again."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "urlRequired": { "summary": "URL required", "value": { "error": "URL is required" } },
+                  "invalidUrl": { "summary": "Invalid URL", "value": { "error": "Invalid URL format" } },
+                  "noEvents": { "summary": "No events", "value": { "error": "At least one event must be selected" } },
+                  "invalidEvents": { "summary": "Invalid event type", "value": { "error": "Invalid events: message.invalid" } },
+                  "noName": { "summary": "Name required", "value": { "error": "Name is required" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } }
+        }
+      }
+    },
+    "/api/webhooks/{id}": {
+      "get": {
+        "operationId": "getWebhook",
+        "summary": "Get webhook",
+        "description": "Get details for a single webhook. The secret is never returned.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookResponse" },
+                "example": {
+                  "id": "680a1b2c3d4e5f6789012345",
+                  "url": "https://example.com/webhooks/tuco",
+                  "events": ["message.sent", "message.failed", "message.reply"],
+                  "name": "Production webhook",
+                  "description": "Sends events to our CRM",
+                  "isActive": true,
+                  "lastTriggeredAt": "2026-04-12T10:30:00.000Z",
+                  "lastSuccessAt": "2026-04-12T10:30:00.000Z",
+                  "lastFailureAt": null,
+                  "failureCount": 0,
+                  "createdAt": "2026-03-01T00:00:00.000Z",
+                  "updatedAt": "2026-04-12T10:30:00.000Z"
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      },
+      "patch": {
+        "operationId": "updateWebhook",
+        "summary": "Update webhook",
+        "description": "Update a webhook's URL, subscribed events, name, description, or active status. Only include the fields you want to change.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateWebhookRequest" },
+              "examples": {
+                "changeUrl": {
+                  "summary": "Change URL",
+                  "value": { "url": "https://new-endpoint.example.com/webhooks" }
+                },
+                "disable": {
+                  "summary": "Disable webhook",
+                  "value": { "isActive": false }
+                },
+                "changeEvents": {
+                  "summary": "Change subscribed events",
+                  "value": { "events": ["message.reply", "message.opened"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook updated",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } }, "example": { "success": true } } }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "examples": {
+                  "invalidUrl": { "summary": "Invalid URL", "value": { "error": "Invalid URL format" } },
+                  "noEvents": { "summary": "Empty events", "value": { "error": "At least one event must be selected" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete webhook",
+        "description": "Permanently delete a webhook. This stops all future event deliveries to this endpoint.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook deleted",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "success": { "type": "boolean" } } }, "example": { "success": true } } }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "402": { "description": "Subscription past due", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "READ_ONLY", "code": "READ_ONLY", "reason": "past_due" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
+        }
+      }
+    },
+    "/api/webhooks/{id}/health-check": {
+      "post": {
+        "operationId": "testWebhook",
+        "summary": "Test webhook (health check)",
+        "description": "Fire a test webhook to your endpoint to verify it's reachable and responding correctly. Sends a real signed POST with `data.test: true` so your handler can distinguish test pings from real events. Uses the webhook's first subscribed event type.",
+        "tags": ["Webhooks"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "Webhook ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Health check result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WebhookHealthCheckResponse" },
+                "examples": {
+                  "success": {
+                    "summary": "Endpoint is healthy",
+                    "value": {
+                      "success": true,
+                      "message": "Health check passed",
+                      "statusCode": 200,
+                      "response": "OK"
+                    }
+                  },
+                  "failure": {
+                    "summary": "Endpoint unreachable or errored",
+                    "value": {
+                      "success": false,
+                      "error": "HTTP 502: Bad Gateway",
+                      "details": "upstream connect error",
+                      "statusCode": 502
+                    }
+                  },
+                  "timeout": {
+                    "summary": "Endpoint timed out",
+                    "value": {
+                      "success": false,
+                      "error": "The operation was aborted due to timeout"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Unauthorized" } } } },
+          "404": { "description": "Webhook not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" }, "example": { "error": "Webhook not found" } } } }
         }
       }
     }
@@ -1012,12 +1658,26 @@
               "properties": {
                 "leadId": { "type": "string" },
                 "messageId": { "type": "string" },
+                "message": { "type": "string", "description": "The reply text from the lead (e.g. \"Stop\")" },
                 "respondedAtUtc": { "type": "string", "format": "date-time" },
                 "recipientEmail": { "type": "string" },
                 "recipientPhone": { "type": "string" },
                 "name": { "type": "string" },
+                "recentReplies": {
+                  "type": "array",
+                  "description": "Up to 10 most recent inbound replies from this lead, newest first",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "messageId": { "type": "string" },
+                      "message": { "type": "string" },
+                      "receivedAtUtc": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                },
                 "parentMessages": {
                   "type": "array",
+                  "description": "Up to 10 most recent outbound messages sent to this lead, newest first",
                   "items": {
                     "type": "object",
                     "properties": {
@@ -1038,20 +1698,53 @@
           "totalPages": { "type": "integer" }
         }
       },
+      "CancelForLeadRequest": {
+        "type": "object",
+        "properties": {
+          "leadId": { "type": "string", "description": "Lead ID to cancel messages for" },
+          "recipientPhone": { "type": "string", "description": "Phone number (E.164) — looks up lead, falls back to matching messages directly" },
+          "recipientEmail": { "type": "string", "description": "Email address — looks up lead, falls back to matching messages directly" }
+        }
+      },
+      "CancelForLeadResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "cancelledCount": { "type": "integer", "description": "Number of messages cancelled in DB" },
+          "jobsRemovedFromQueue": { "type": "integer", "description": "Number of BullMQ jobs removed" },
+          "leadId": { "type": "string", "nullable": true },
+          "messageIds": { "type": "array", "items": { "type": "string" }, "description": "IDs of cancelled messages" }
+        }
+      },
       "AddLeadToCampaignRequest": {
         "type": "object",
         "properties": {
-          "leadId": { "type": "string", "description": "Existing lead ID" },
+          "leadId": { "type": "string", "description": "Existing lead ID. Provide either this or `lead`." },
           "lead": {
             "type": "object",
-            "description": "Create new lead and add",
+            "description": "Create new lead (or reuse existing matching lead) and add to the campaign. Workspace-wide dedup runs across email, phone, altEmail1-3, altPhone1-3, integrationIds.ghlRecordId, integrationIds.hubspotRecordId — when an existing lead matches, that lead is reused as-is (request body fields are NOT applied to it; integration IDs are backfilled if the matched lead has none).",
+            "required": ["firstName"],
             "properties": {
-              "firstName": { "type": "string" },
+              "firstName": { "type": "string", "description": "Required." },
               "lastName": { "type": "string" },
-              "email": { "type": "string" },
-              "phone": { "type": "string" },
+              "email": { "type": "string", "description": "Lowercased before dedup. Either email or phone is required." },
+              "phone": { "type": "string", "description": "Normalized to E.164 (e.g. +14155551234) before dedup. Either email or phone is required." },
+              "altPhone1": { "type": "string" },
+              "altPhone2": { "type": "string" },
+              "altPhone3": { "type": "string" },
+              "altEmail1": { "type": "string" },
+              "altEmail2": { "type": "string" },
+              "altEmail3": { "type": "string" },
               "companyName": { "type": "string" },
-              "jobTitle": { "type": "string" }
+              "jobTitle": { "type": "string" },
+              "linkedinUrl": { "type": "string" },
+              "notes": { "type": "string" },
+              "customFields": { "type": "object", "description": "Free-form key/value object stored on the lead." },
+              "contactOwnerEmail": { "type": "string", "nullable": true, "description": "Email of the workspace user who owns this contact." },
+              "contactOwnerId": { "type": "string", "description": "User ID of the workspace member who owns this contact (alternative to contactOwnerEmail)." },
+              "ghlContactId": { "type": "string", "description": "GHL contact ID. Stored as integrationIds.ghlRecordId. Used for deterministic dedup — a second call with the same ghlContactId reuses the lead. Backfilled onto a matched existing lead when the lead has no ghlRecordId yet (never overwrites)." },
+              "ghlLocationId": { "type": "string", "description": "GHL location ID. Stored as integrationIds.ghlLocationId. Backfilled onto matched lead if missing." },
+              "hsContactId": { "type": "string", "description": "HubSpot contact ID. Stored as integrationIds.hubspotRecordId. Used for deterministic dedup. Backfilled onto matched lead if missing." }
             }
           }
         }
@@ -1070,6 +1763,157 @@
           "ghlLocationId": { "type": "string", "nullable": true },
           "hsPortalId": { "type": "string", "nullable": true },
           "hsContactId": { "type": "string", "nullable": true }
+        }
+      },
+      "WebhookObject": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Webhook ID" },
+          "url": { "type": "string", "description": "Endpoint URL" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "Subscribed event types"
+          },
+          "name": { "type": "string", "description": "User-friendly name" },
+          "description": { "type": "string", "nullable": true, "description": "Optional description" },
+          "isActive": { "type": "boolean", "description": "Whether the webhook is active" },
+          "lastTriggeredAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last time any event was sent" },
+          "lastSuccessAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last successful delivery" },
+          "lastFailureAt": { "type": "string", "format": "date-time", "nullable": true, "description": "Last failed delivery" },
+          "failureCount": { "type": "integer", "description": "Consecutive failure count" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ListWebhooksResponse": {
+        "type": "object",
+        "properties": {
+          "webhooks": { "type": "array", "items": { "$ref": "#/components/schemas/WebhookObject" } }
+        }
+      },
+      "WebhookResponse": { "$ref": "#/components/schemas/WebhookObject" },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events", "name"],
+        "properties": {
+          "url": { "type": "string", "description": "HTTPS endpoint URL to receive webhook POSTs" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "Event types to subscribe to (at least one required)"
+          },
+          "name": { "type": "string", "description": "User-friendly name for this webhook" },
+          "description": { "type": "string", "description": "Optional description" }
+        }
+      },
+      "CreateWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Webhook ID" },
+          "secret": { "type": "string", "description": "HMAC signing secret — shown ONCE. Save it now." },
+          "url": { "type": "string" },
+          "events": { "type": "array", "items": { "type": "string" } },
+          "name": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "warning": { "type": "string", "description": "Reminder to save the secret" }
+        }
+      },
+      "UpdateWebhookRequest": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "New endpoint URL" },
+          "events": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["message.sent", "message.failed", "message.fallback", "message.reply", "message.opened"] },
+            "description": "New event subscriptions (replaces existing)"
+          },
+          "name": { "type": "string", "description": "New name" },
+          "description": { "type": "string", "description": "New description" },
+          "isActive": { "type": "boolean", "description": "Enable or disable without deleting" }
+        }
+      },
+      "WebhookHealthCheckResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "description": "Whether your endpoint responded with 2xx" },
+          "message": { "type": "string", "description": "Human-readable result (on success)" },
+          "statusCode": { "type": "integer", "description": "HTTP status code from your endpoint" },
+          "response": { "type": "string", "description": "Response body from your endpoint" },
+          "error": { "type": "string", "description": "Error message (on failure)" },
+          "details": { "type": "string", "description": "Error details (on failure)" }
+        }
+      },
+      "GoalBot": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "goal": { "type": "string" },
+          "status": { "type": "string", "enum": ["draft", "active", "paused", "archived"] },
+          "stages": { "type": "array", "items": { "$ref": "#/components/schemas/GoalStage" } },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalEnrolled": { "type": "integer" },
+              "inProgress": { "type": "integer" },
+              "completed": { "type": "integer" },
+              "abandoned": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "GoalStage": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "objective": { "type": "string" },
+          "prompt": { "type": "string" },
+          "advanceConditions": { "type": "array" },
+          "exitConditions": { "type": "array" },
+          "maxTurns": { "type": "integer" },
+          "collectFields": { "type": "array" }
+        }
+      },
+      "CreateGoalBotRequest": {
+        "type": "object",
+        "required": ["name", "goal", "stages"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "goal": { "type": "string" },
+          "stages": { "type": "array", "items": { "$ref": "#/components/schemas/GoalStage" } },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "mode": { "type": "string", "enum": ["copilot", "autopilot"] },
+              "tone": { "type": "string", "enum": ["professional", "friendly", "casual"] },
+              "inactivityTimeoutDays": { "type": "integer" }
+            }
+          },
+          "entry": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["manual", "campaign_handoff", "api", "tag_trigger"] },
+              "triggerTag": { "type": "string" }
+            }
+          },
+          "onComplete": {
+            "type": "object",
+            "properties": {
+              "addTag": { "type": "string" },
+              "webhookUrl": { "type": "string" }
+            }
+          },
+          "onAbandon": {
+            "type": "object",
+            "properties": {
+              "addTag": { "type": "string" },
+              "webhookUrl": { "type": "string" }
+            }
+          }
         }
       },
       "ErrorResponse": {

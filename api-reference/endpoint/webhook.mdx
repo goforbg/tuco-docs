@@ -1,49 +1,97 @@
 ---
-title: "Webhooks Endpoint"
-api: "POST /webhooks"
-description: "How Tuco AI sends event notifications to your chosen URL"
+title: "Webhooks Overview"
+description: "Register endpoints, manage subscriptions, and test delivery — all via API"
+icon: "webhook"
 ---
 
-## What the Webhooks Endpoint Represents
+## What are webhooks?
 
-The webhooks endpoint is the address your systems expose for Tuco to send event notifications.
-
-When you register a URL in Tuco:
-
-- Tuco uses that URL as the destination for selected events.
-- Your team stays in control of which environments and tools receive those notifications.
-
-The system automatically handles when to call this URL based on the events you have enabled.
+Webhooks push real-time event notifications to URLs you control. Instead of polling the API, your systems receive a `POST` request the moment something happens — a message sends, fails, gets a reply, or is read.
 
 ---
 
-## Types of Events You Can Receive
+## How it works
 
-Depending on your configuration, Tuco can notify you about events such as:
-
-- New leads being added or updated.
-- Messages reaching a final visible state.
-- Availability or list changes that matter for outreach.
-
-Each event notification is designed to be compact and focused on what changed, so your own systems can update their records without needing to know how Tuco performs its work internally.
-
----
-
-## High‑Level Payload Expectations
-
-Although the exact fields may evolve over time, you can expect every webhook call to include:
-
-- A clear event type.
-- Enough identifiers to link the event back to your own data.
-- Timestamps that let you order events in your own logs.
-
-Data is preserved safely in Tuco, so any identifiers you receive here can be cross‑checked in the Tuco UI or through the regular APIs.
+<Steps>
+  <Step title="Register a webhook">
+    Call [Create Webhook](/api-reference/endpoint/create-webhook) with your endpoint URL and the events you care about. **Save the signing secret** from the response — it's shown once.
+  </Step>
+  <Step title="Receive events">
+    Tuco sends a signed `POST` to your URL whenever a subscribed event fires. Verify the `X-Tuco-Signature` header using your secret.
+  </Step>
+  <Step title="Return 2xx quickly">
+    Acknowledge the webhook with a `2xx` response within a few seconds. Do heavy processing asynchronously.
+  </Step>
+</Steps>
 
 ---
 
-## Advanced Management APIs (Coming Soon)
+## Available events
 
-Programmatic management of webhooks themselves (such as listing, updating, or testing webhook registrations via API) is **Coming Soon**.
+| Event | Fired when |
+|-------|-----------|
+| `message.sent` | Message accepted and sent by Tuco |
+| `message.failed` | Message failed after all retries (technical error) |
+| `message.fallback` | Recipient doesn't have iMessage (business outcome, not error) |
+| `message.reply` | Lead or contact replied to your message |
+| `message.opened` | Message was read (read receipt, where supported) |
 
-For now, focus on the behavior of the notifications your endpoint receives, and manage configuration from within the Tuco product where available.
+See [Message Webhooks](/api-reference/message-webhooks) for full payload details, example bodies, and field-by-field documentation for each event.
 
+---
+
+## Management API
+
+Full CRUD for webhook registrations. All endpoints require Bearer token auth.
+
+<CardGroup cols={2}>
+  <Card title="List Webhooks" icon="list" href="/api-reference/endpoint/list-webhooks">
+    `GET /api/webhooks` — See all webhooks in your workspace
+  </Card>
+  <Card title="Create Webhook" icon="plus" href="/api-reference/endpoint/create-webhook">
+    `POST /api/webhooks` — Register a new endpoint
+  </Card>
+  <Card title="Get Webhook" icon="eye" href="/api-reference/endpoint/get-webhook">
+    `GET /api/webhooks/{id}` — Get details for one webhook
+  </Card>
+  <Card title="Update Webhook" icon="pen" href="/api-reference/endpoint/update-webhook">
+    `PATCH /api/webhooks/{id}` — Change URL, events, or status
+  </Card>
+  <Card title="Delete Webhook" icon="trash" href="/api-reference/endpoint/delete-webhook">
+    `DELETE /api/webhooks/{id}` — Remove a webhook permanently
+  </Card>
+  <Card title="Test Webhook" icon="flask-vial" href="/api-reference/endpoint/test-webhook">
+    `POST /api/webhooks/{id}/health-check` — Fire a test ping
+  </Card>
+</CardGroup>
+
+---
+
+## Security
+
+Every webhook `POST` includes three headers for verification:
+
+| Header | Purpose |
+|--------|---------|
+| `X-Tuco-Signature` | HMAC-SHA256 hex digest of the request body, signed with your webhook secret |
+| `X-Tuco-Event` | Event type (e.g. `message.sent`) |
+| `X-Tuco-Timestamp` | When the webhook was fired (ISO UTC) |
+
+Always verify `X-Tuco-Signature` before processing. See [signature verification code examples](/api-reference/message-webhooks#headers--signature-verification) in the Message Webhooks page.
+
+---
+
+## Delivery behavior
+
+<Info>
+Webhooks are **fire-and-forget**. Tuco sends each event once and does not retry on failure. Make sure your endpoint is reliable and returns `2xx` quickly.
+</Info>
+
+- **Parallel delivery** — if you have multiple webhooks subscribed to the same event, all receive the POST simultaneously
+- **10-second timeout** — if your endpoint doesn't respond within 10 seconds, the delivery is marked as failed
+- **No retry** — failed deliveries are logged but not retried. Use the [Test Webhook](/api-reference/endpoint/test-webhook) endpoint to verify your setup
+- **Failure tracking** — `failureCount`, `lastSuccessAt`, and `lastFailureAt` on the webhook object let you monitor health
+
+<Tip>
+Use [Test Webhook](/api-reference/endpoint/test-webhook) after creating or updating a webhook to confirm your endpoint is reachable and your signature verification works.
+</Tip>

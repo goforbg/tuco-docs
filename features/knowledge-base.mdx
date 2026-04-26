@@ -1,63 +1,77 @@
 ---
-title: 'Knowledge Base'
-description: 'AI-powered auto-replies with 3 modes: autopilot, copilot, and manual'
-icon: 'brain'
+title: "Knowledge Base"
+description: "AI-powered auto-replies that handle inbound conversations"
+icon: "brain"
 ---
 
-# Knowledge Base
+<Note>The Knowledge Base is now part of **AI SDR** — find it at AI SDR → Knowledge tab.</Note>
 
-The Knowledge Base powers AI-generated replies to inbound messages. Train it on your website content, FAQs, and call transcripts to handle common questions automatically.
+## What the Knowledge Base Does
 
-## Three Modes
+The Knowledge Base (KB) is Tuco's AI reply engine. When a lead replies to your message, the KB can:
 
-<CardGroup cols={3}>
-  <Card title="Autopilot" icon="robot">
-    AI sends replies automatically when confidence exceeds your threshold.
-  </Card>
-  <Card title="Copilot" icon="handshake">
-    AI drafts replies and sends them to Telegram for approval before sending.
-  </Card>
-  <Card title="Manual" icon="hand">
-    AI suggests replies in the inbox. You edit and send manually.
-  </Card>
-</CardGroup>
+- **Draft a reply** using your business context, FAQs, and conversation history
+- **Send automatically** (Autopilot) or **wait for approval** (Copilot)
+- **Route to the right person** via Telegram and email notifications
 
-## Setup
+## Modes
 
-1. Navigate to **Knowledge Base** in the sidebar
-2. Click **Add Source** — enter a URL or paste text
-3. Wait for processing (researching → embedding → ready)
-4. Set your preferred mode and confidence threshold
+### Manual
+No AI involvement. Replies are forwarded to the contact owner via Telegram and email. You reply manually from Unibox.
 
-## Conversation History
+### Copilot
+AI drafts a reply and sends it to the contact owner for approval:
+- Telegram notification with **Approve** / **Reject** buttons
+- Email with the draft and approval link
+- The draft appears in Unibox for editing before sending
 
-KB replies include context from the last 10 messages in the conversation. This means:
-- The AI won't repeat information already discussed
-- It understands appointment status, prior objections, and conversation flow
-- Follow-ups are contextually appropriate
+### Autopilot
+AI sends the reply automatically without human approval. Use for high-volume, low-risk conversations.
 
-## API
+## How It Works
 
-<ParamField path="mode" type="string" required>
-  One of: `autopilot`, `copilot`, `manual`
-</ParamField>
+1. Lead replies → message is debounced (60 seconds of silence)
+2. All messages in the batch are combined
+3. KB generates a contextual reply using your uploaded knowledge
+4. **Copilot**: draft sent to owner for approval via Telegram + email
+5. **Autopilot**: reply sent immediately, notification sent to owner
 
-<ParamField path="confidenceThreshold" type="number">
-  Minimum confidence score (0-1) for autopilot sends. Default: 0.7
-</ParamField>
+## Notifications
 
-### How Confidence Works
+The contact owner receives notifications via:
+- **Telegram** (personal channel if linked, workspace channel as fallback)
+- **Email** (contact owner's email, with support@tuco.ai CC'd)
 
-```
-confidence = 0.50 * retrieval_score + 0.50 * self_evaluation_score
-```
+If the contact owner can't be found, notifications go to the earliest workspace member.
 
-- **Retrieval score**: How well the KB chunks match the question
-- **Self-evaluation**: Claude's own assessment of answer quality
+## Daily Limits
 
-## Loki Debugging
+Set a max auto-replies per day limit in **Integrations → Telegram → Auto-Reply Limits** (default: 50, max: 500). Once reached, new replies wait until the next day.
 
-```
-{service="app-*"} |= "kb.auto_reply.enqueued"
-{service="workers-*"} |= "kb."
-```
+## Multi-Bubble Replies
+
+The AI Responder sends replies as multiple short iMessage bubbles instead of one long message. This looks more natural:
+
+- Replies split into 2-4 short messages
+- Typing indicator ("...") appears between each bubble
+- 1-3 second delay between bubbles (based on message length)
+- All gaps and throttles bypassed for AI replies — leads don't wait 30 seconds between bubbles
+
+## Reactions
+
+The AI Responder detects iMessage reactions (tapbacks) and does NOT treat them as messages:
+- Heart, thumbs up/down, laugh, emphasize, question, and custom emoji reactions are recognized
+- No AI call is wasted on reactions
+- No notifications sent for reactions
+
+## Voice Notes
+
+When a lead sends a voice note:
+- Audio file is downloaded and stored
+- Displayed as an audio player in Unibox
+- Optional: transcribe via Whisper AI (enable in workspace settings)
+- Transcription passed to AI Responder as the inbound message
+
+## Goal Bot Integration
+
+When a lead is enrolled in a Goal Bot, the AI Responder uses the goal bot's stage-specific prompt instead of generic knowledge base search. See [Goal Bots](/features/goal-bots) for details.

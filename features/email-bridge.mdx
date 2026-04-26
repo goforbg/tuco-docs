@@ -1,34 +1,48 @@
 ---
-title: 'Email Bridge'
-description: 'Send and receive iMessages via email — no phone required'
-icon: 'envelope'
+title: "Email Bridge"
+description: "Send iMessages by email — no app or API needed"
+icon: "envelope"
 ---
 
-# Email Bridge
+## How Email Bridge Works
 
-The Email Bridge enables email-to-iMessage communication. Email lines use iMessage email addresses instead of phone numbers.
+Send iMessages by emailing `+phone@send.tuco.ai` from your email client. No app, no API, no setup beyond having a Tuco account.
 
-## How Email Lines Work
+## Sending a Message
 
-| Feature | Email Line | Phone Line |
-|---------|-----------|------------|
-| Pricing | $60/mo | $149/mo |
-| Call button visible | No | Yes |
-| SMS fallback | No | Yes |
-| BYOD option | No | Yes |
-| Daily limit (new) | 50 | 50 |
-| Daily limit (total) | 150 | 150 |
+1. Compose an email in Gmail, Outlook, or any email client
+2. Set the **To** field to: `+19042956129@send.tuco.ai`
+3. Write your message in the email body
+4. Hit Send — Tuco sends it as an iMessage and emails you a confirmation
 
-## Setup
+## Email Formats
 
-Email lines are provisioned automatically when you purchase one through the billing page. The iMessage email address is assigned from our infrastructure.
+| Format | Description |
+|--------|-------------|
+| `+19042956129@send.tuco.ai` | Uses your first available active line |
+| `+19042956129-1@send.tuco.ai` | Uses a specific line number (shown on Lines page) |
 
-## Use Cases
+## Requirements
 
-- **Marketing blasts**: No call-back button means leads text instead of calling
-- **High-volume outreach**: Lower cost per line
-- **Multi-line setups**: Mix email + phone lines for different use cases
+- Your email must be registered in Tuco (or added to the sender allowlist)
+- Your workspace must have at least one active iMessage line
+- Phone number must be in E.164 format (+country code + number)
 
-## API
+## Sender Allowlist
 
-Email lines work identically to phone lines in the API. The only difference is the `recipientEmail` field instead of `recipientPhone`.
+Allow additional email addresses to send via the bridge without a Tuco account:
+
+1. Go to **Integrations → Email Bridge**
+2. Add colleague emails to the allowlist
+3. They can now send iMessages via email
+
+## Error Handling
+
+If something goes wrong, you receive a bounce email:
+
+| Error | Fix |
+|-------|-----|
+| Invalid phone number | Check format: +19042956129 |
+| Not authorized | Your email isn't registered or allowlisted |
+| No active lines | Set up a line at Lines → Purchase |
+| Send failed | Recipient may not have iMessage |

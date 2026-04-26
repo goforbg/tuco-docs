@@ -1,195 +1,160 @@
 ---
 title: "Campaigns"
-description: "Design multi-step outreach that respects limits, timing, and customer experience"
+description: "Multi-step outreach with AI, branching, stop conditions, and smart follow-ups"
 icon: "bullhorn"
 ---
 
-## What Campaigns Let You Do
+## Campaign Lifecycle
 
-Campaigns in Tuco let you turn a list of leads into a **structured, multi-step outreach journey**:
+1. **Select leads** — pick a list, import from HubSpot, or use API-only mode (leads added via API/webhooks)
+2. **Compose steps** — each step is a message with optional wait, stop conditions, and branching
+3. **Assign lines** — select sending lines, Tuco spreads across them within limits
+4. **Launch** — Tuco sends step 1, then advances through the sequence
 
-- **Scale**: Reach hundreds or thousands of people with a single configuration.
-- **Control**: Decide who gets contacted, when, and on which lines.
-- **Safety**: Stay within sensible sending limits and time windows so outreach feels human, not spammy.
-- **Feedback**: See clear status and performance signals you can plug into your own systems.
+### What happens when a lead replies
 
-You define the strategy; Tuco handles the day‑to‑day execution.
+By default, when a lead replies:
+- The campaign **pauses** for that lead
+- Your **Knowledge Base** takes over and handles the conversation (copilot or autopilot mode)
+- The campaign does NOT continue to the next step
 
----
+You can change this with **"Continue + KB in parallel"** mode — the campaign continues to the next step on schedule while the KB handles the reply independently.
 
-## Core Concepts
+## Message Variables
 
-- **Audience**: The leads you want to contact (typically from a list or segment).
-- **Steps**: The messages and delays that make up your sequence.
-- **Lines**: The sending identities (numbers/emails) you’re comfortable using.
-- **Schedule & Limits**: Guardrails on when and how quickly messages go out.
+Use variables in your messages to personalize:
 
-From your point of view, a campaign is a template that answers four questions:
+| Variable | Example | Description |
+|----------|---------|-------------|
+| `{firstName}` | Sarah | Lead's first name |
+| `{lastName}` | Lane | Lead's last name |
+| `{companyName}` | Acme Corp | Lead's company |
+| `{email}` | sarah@acme.com | Lead's email |
+| `{phone}` | +1234567890 | Lead's phone |
+| `{line_name}` | John Smith | Sending line's display name |
 
-1. **Who** should receive this?
-2. **What** should they receive at each step?
-3. **When** is it okay to send each step?
-4. **How** should we behave when leads reply or can’t be reached?
+### Fallback syntax
 
----
+If a variable is empty, provide a fallback after the pipe:
 
-## Designing a Campaign
+```
+Hey {firstName|there}, this is {line_name}
+```
 
-When you create a campaign in the Tuco app, you typically:
+If `firstName` is empty, the message becomes: "Hey there, this is John Smith"
 
-1. **Choose an audience**
-   - Pick an existing list or segment of leads.
-   - Optionally filter further (e.g. by region, product, or last activity).
+### API tool variables
 
-2. **Attach lines**
-   - Select which approved sending identities (lines) are eligible.
-   - Tuco spreads activity across these lines within your configured limits.
+Use workspace API tools as variables:
 
-3. **Define steps**
-   - Draft the message for each step.
-   - Choose how long to wait after the previous step (seconds, minutes, hours, days).
-   - Decide whether a step should only apply to non‑responders.
+```
+Hey {firstName}, your account status is {api_check_status|active}
+```
 
-4. **Set timing rules**
-   - Allowed hours of day.
-   - Allowed days of week.
-   - Any spacing you want between contacts on the same line.
+The `api_check_status` tool is called before sending. If the API fails, "active" is used as fallback.
 
-Once this is saved and launched, Tuco takes responsibility for when individual messages are actually sent, within those rules.
+## Stop Conditions
 
----
+Stop conditions prevent a step from sending if a condition is met:
 
-## How Campaign Statuses Help You Operate
+| Condition | Description |
+|-----------|-------------|
+| Lead replied | Lead sent any reply |
+| Lead replied (keyword) | Lead replied with a specific keyword |
+| Tag exists/not exists | Lead has or doesn't have a tag |
+| HubSpot property | Check a HubSpot contact property |
+| GHL tag | Check a GoHighLevel contact tag |
+| Custom API | Call a workspace API tool and check the result |
+| Lead was contacted before | Tuco has previously sent to this lead |
+| Lead was contacted before (any campaign) | Tuco has sent to this lead in any past campaign |
+| Unsubscribed/DNC | Lead is on the Do Not Contact list |
 
-Tuco exposes a small, stable set of message statuses so you can understand campaign health at a glance and build your own logic around it:
+Stop conditions are evaluated **live** — HubSpot and GHL checks call the real APIs, not stale cached data.
 
-- **Queued**
-  - The message is planned, but Tuco is waiting for:
-    - An allowed time window.
-    - An allowed day of week.
-    - Available capacity on the selected line.
-  - Use this to understand “what is going to happen soon but hasn’t started yet”.
+<Note>Stop conditions only apply from step 2 onward. Step 1 always sends (it's the entry point).</Note>
 
-- **Pending / Sending**
-  - The message is in the process of going out.
-  - Use this to distinguish “actively being delivered” from “just planned”.
+### Condition Operators
 
-- **Sent / Delivered**
-  - The message has been successfully handed off to, or confirmed by, the downstream channel (where supported).
-  - Use these states to:
-    - Trigger follow‑up tasks in your systems.
-    - Move a lead forward in your own journeys.
+When comparing property values in stop conditions and branches, the following operators are available:
 
-- **Failed**
-  - Tuco could not send the message (for example: permanently invalid address or a channel‑level error).
-  - Failed messages are not retried silently.
-  - Use this to:
-    - Clean data.
-    - Alert operators.
-    - Decide whether another channel is appropriate.
+| Operator | Label | Use case |
+|----------|-------|----------|
+| `eq` | equals | Exact match |
+| `neq` | not equals | Exclude a value |
+| `contains` | contains | Partial text match |
+| `not_contains` | does not contain | Exclude partial match |
+| `starts_with` | starts with | Prefix match |
+| `gt` | greater than | Numeric comparison |
+| `gte` | greater than or equal | Numeric comparison |
+| `lt` | less than | Numeric comparison |
+| `lte` | less than or equal | Numeric comparison |
+| `gt_date` | after date | Date comparison |
+| `lt_date` | before date | Date comparison |
+| `exists` | exists | Field has a value |
+| `not_exists` | is missing | Field is empty |
 
-- **Fallback**
-  - The primary channel you chose is not available for this lead.
-  - Tuco records this outcome and expects your configuration or integration to decide what to do next (e.g. SMS or email).
-  - See `/features/failures-and-fallbacks` for how to interpret this in your own workflows.
+## Reply Behavior
 
-At the campaign level, you see aggregates of these statuses so you can quickly answer:
+Control what happens when a lead replies to your campaign:
 
-- How many people have been contacted?
-- How many are still queued?
-- How many hit failures or fallbacks?
+### Pause & AI Responder (default)
+Campaign pauses for this lead. The AI Responder handles the conversation.
 
----
+### Continue + AI Responder in parallel
+Campaign continues to the next step on schedule. AI Responder handles the reply independently. Use for multi-touch drips where follow-ups must go out regardless.
 
-## Limits, Timing & Customer Experience
+Toggle this in the campaign builder on step 1 under "Reply Behavior."
 
-Campaigns are built to help you grow **without** burning your lines or audience:
+## Branching
 
-- **Per‑line daily limits**
-  - Protect each sending identity with per‑day caps on:
-    - New conversations.
-    - Total messages.
-  - When caps are reached, additional messages stay **Queued** instead of being forced through.
+Branch steps split leads into different paths based on conditions:
 
-- **Time windows and days**
-  - Ensure messages only go out:
-    - During business hours you choose.
-    - On days of the week you approve (e.g. weekdays only).
-  - Outside those windows, messages simply wait without being lost.
+- **Lead replied** — did the lead respond?
+- **No reply for X hours/days** — silence after a set time
+- **Tag added** — was a specific tag added?
+- **HubSpot property** — check a CRM property value
+- **GHL has tag** — check a GoHighLevel tag
+- **Custom API** — call an API and branch on the result
+- **Lead was contacted before** — has Tuco sent to this lead before?
+- **Default** — fallback path if no other condition matches
 
-- **Natural pacing**
-  - Tuco spaces out activity on a line to avoid obvious spikes.
-  - You don’t have to manage the low‑level scheduling yourself; you only configure your comfort level.
+## SMS Fallback
 
-From your side, you only ever see:
+Each step can have an SMS fallback. If iMessage is unavailable for a lead, the SMS version is sent via Twilio instead. Configure the fallback message per step or use the same text as the iMessage.
 
-- Which messages are queued vs sent vs failed vs fallback.
-- That messages respect the windows and limits you set, even during large sends.
+## AI-Powered Steps
 
----
+Steps can be AI-driven instead of using a fixed template:
 
-## Multi-Step Journeys & Replies
+- Set a **prompt** describing what the AI should say
+- The AI generates a personalized message for each lead using their data
+- If AI generation fails, the **manual fallback** message is sent instead
+- AI usage is tracked and logged for billing
 
-Campaigns support rich flows rather than one‑off blasts:
+## Testing Campaigns
 
-- **Sequenced steps**
-  - Each step waits for the actual send time of the previous step before it becomes eligible.
-  - Long delays (e.g. “4 days later”) are treated the same as short ones (“20 minutes later”) from your perspective—Tuco simply holds the message until it is allowed.
+Use the **Test Conversation** panel to simulate the full campaign flow for a real lead:
 
-- **Behavior when leads reply**
-  - Replies can:
-    - Update campaign stats (reply counts and rates).
-    - Drive your own automations via reply webhooks (see `/features/replies` and `/api-reference/message-webhooks`).
-  - Many teams choose to:
-    - Stop or skip later steps for leads who replied.
-    - Create follow‑up tasks in their CRM when certain replies arrive.
+1. **Select a lead** — uses their real data (name, phone, tags, CRM properties)
+2. **See each step** — AI-generated messages use real AI calls (billed to your usage)
+3. **Reply as the lead** — type what the lead would say to test reply handling
+4. **See stop conditions** — green/red pills show which conditions passed or triggered
+5. **See branches** — click "Evaluate live" to check real HubSpot properties, GHL tags, and custom API calls
+6. **Fast-forward waits** — skip "3 days later" to see what happens next
+7. **Path simulation** — visual timeline showing every step, wait, branch, and the delivery method (iMessage vs SMS fallback)
+8. **CRM links** — open the lead in HubSpot or GHL to change data mid-test, then restart from the header
 
-Tuco’s goal is to make these patterns easy to implement from your side using clear statuses and webhooks, without you needing to understand any internal routing or storage.
+<Note>AI-generated test messages count toward your AI usage. Use sparingly on expensive models.</Note>
 
----
+## API-Only Campaigns
 
-## When Lines or Channels Change
+Create campaigns with no initial list — leads are added via the API:
 
-Real‑world sending conditions are not static. Lines can become unavailable, and some channels may stop being appropriate for particular contacts.
+```bash
+POST /api/campaigns/{id}/enroll
+{
+  "leadId": "lead_123"
+}
+```
 
-Tuco is designed so that, from your perspective:
-
-- **Conversation continuity is respected**
-  - Once a lead starts hearing from a given line in a campaign, follow‑ups prefer that same line so the thread feels coherent.
-
-- **You see what changed**
-  - If a line can no longer be used, future sends either:
-    - Stop and become **Failed**, or
-    - Are held until a safe option is available,
-    - Depending on your configuration and what’s safe for that conversation.
-
-- **Campaigns are recoverable**
-  - If no lines are usable, a campaign can be paused.
-  - Once you restore line health or add capacity, you can resume and let queued activity continue.
-
-You never have to manage internal reassignments or recovery steps—the only contract you rely on is what the UI, APIs, and webhooks report.
-
----
-
-## Working with Other Tuco Features
-
-Campaigns plug into the rest of Tuco’s surface area:
-
-- **Availability checks**
-  - Use `/features/check-availability` to:
-    - Pre‑qualify leads for iMessage.
-    - Decide when to prefer SMS or email instead.
-  - Campaigns can respect those availability signals so you don’t waste steps on unreachable channels.
-
-- **Failures & fallbacks**
-  - `/features/failures-and-fallbacks` explains:
-    - How to interpret high failure or fallback counts.
-    - How to decide when to switch channels or clean data.
-
-- **Replies & inbox**
-  - `/features/replies` shows how replies are surfaced via:
-    - The Tuco UI.
-    - Webhooks you can consume in your CRM or backend.
-
-Together, these let you treat campaigns as a **predictable, observable engine** that you can safely build your own logic and reporting on top of, without ever needing access to how Tuco is implemented internally.
-
+Useful for event-driven enrollment (form submissions, webhook triggers, CRM automations).

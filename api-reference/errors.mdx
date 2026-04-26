@@ -160,6 +160,14 @@ Only `4xx` and `5xx` responses indicate actual errors.
 
 ---
 
+{/* SYNC_API_DOCS: Rate limit table must stay in sync with:
+     - tuco-app/src/lib/apiRateLimiter.ts RATE_LIMIT_PRESETS (enforcement)
+     - tuco-app/src/lib/availabilityThrottle.ts (daily caps, device gaps)
+     - tuco-app/src/lib/messageSender.ts (daily line limits)
+     - tuco-app/src/app/integrations/page.tsx (API Reference table in UI)
+     - tuco-app/src/components/ApiInstructions.tsx (shared API docs component)
+   grep for SYNC_API_DOCS across all tuco repos to find every location. */}
+
 ## Rate limits
 
 Tuco applies per-workspace rate limits to protect the platform. When you hit
@@ -169,22 +177,35 @@ a limit:
 - The `Retry-After` header tells you how many seconds to wait before retrying.
 - No data is modified — safe to retry.
 
-| Endpoint group | Limit |
-|---|---|
-| **Check iMessage availability** (`/api/check-availability`, `/api/leads/check-availability`) | 70 checks/day per line; high-volume checks may experience slight delays |
-| **Send message** (`/api/messages`, `/api/leads/send`) | 60 req/min |
-| **Unibox reply** (`/api/unibox/send-reply`) | 30 req/min |
-| **Create campaign** (`/api/campaigns`) | 200 req/min |
-| **Get replies** (`/api/replies`) | 120 req/min |
-| **Fallback SMS** (`/api/fallback-sms`) | 200 req/min |
+| Endpoint group | API rate limit | Daily cap |
+|---|---|---|
+| **Send message** (`/api/messages`) | 60 req/min | Per-line (see `GET /api/lines/by-user` for your limits) |
+| **Check iMessage availability** (`/api/check-availability-rr`, `/api/leads/check-availability`) | 200 req/min | **70 checks/day per line** |
+| **Get replies** (`/api/replies`) | 120 req/min | — |
+| **Create campaign** (`/api/campaigns`) | 200 req/min | — |
+| **Campaign add lead** (`/api/campaigns/{id}/leads`) | 200 req/min | — |
+| **Unibox reply** (`/api/unibox/send-reply`) | 30 req/min | — |
+| **Fallback SMS** (`/api/fallback-sms`) | 200 req/min | — |
 
 All limits are per workspace (organization), regardless of how many API keys or users are calling the endpoint.
 
 <Note>
-**Availability checks:** Each line in your workspace can perform up to 70 availability checks per day.
-If you have multiple lines, your total daily capacity is higher. When all lines are exhausted for the day,
-you receive a `429` response. High-volume checks may experience slight delays to ensure accuracy.
+**Availability checks have two limits:**
+1. **200 req/min** API rate limit (token bucket, per workspace)
+2. **70 checks/day per line** hard cap (each check hits a real device). With 3 lines = 210/day total.
+
+When the daily cap is exhausted, you get `429` with `Retry-After: 3600`.
+
+Availability checks do **not** consume your daily send quota — they use separate counters.
 </Note>
+
+<Tip>
+**For API integrators:** Skip availability checking entirely. Just call `POST /api/messages`
+and listen for the `message.fallback` webhook to trigger your SMS/WhatsApp fallback.
+This avoids burning your 70/day availability quota. See the
+[check-availability-rr endpoint](/api-reference/endpoint/check-availability-rr#recommended-pattern-send--fallback-webhook)
+for the recommended pattern.
+</Tip>
 
 <Tip>
 For high-volume sends, use campaigns instead of individual API calls. Campaigns

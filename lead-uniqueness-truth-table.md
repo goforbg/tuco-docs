@@ -40,7 +40,7 @@ Empty/whitespace is ignored. A lead must have at least one non-empty identifier 
 |--------|-------------|
 | **POST /api/leads** (import) | `importLeads`: workspace-wide duplicate check by `contactIdentifiers`; same-batch duplicates (same identifier in two rows) rejected; index `workspaceId + contactIdentifiers` (unique multikey). |
 | **PUT /api/leads** (update) | If any of email/phone/alt* change: merge with current doc, recompute `contactIdentifiers`, find other lead in workspace with any of those identifiers; if found → 409. Duplicate key (11000) → 409. |
-| **POST /api/campaigns/[id]/leads** (add lead) | Workspace-wide check before creating new lead; if identifier exists → 409 with `existingLeadId` (client can use that leadId to add to campaign). New lead gets `contactIdentifiers` set. |
+| **POST /api/campaigns/[id]/leads** (add lead) | Workspace-wide check before creating new lead. If identifier matches an existing lead → that lead is **reused as-is** (request body fields are NOT applied to it) and added to the campaign — returns **201** on first enrollment, **200** with `alreadyInCampaign: true` if it's already in this campaign. New leads get `contactIdentifiers` set. To update a matched lead, call `PUT /api/leads/{id}` separately. |
 | **Quick send / createQuickSendLead** | `findLeadByRecipient` first; if lead exists for that email/phone (or alts), return existing lead id (no new lead). New lead gets `contactIdentifiers` set. |
 
 ---

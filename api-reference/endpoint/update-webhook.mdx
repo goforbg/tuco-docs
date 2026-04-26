@@ -1,0 +1,92 @@
+---
+title: "Update Webhook"
+api: "PATCH /api/webhooks/{id}"
+description: "Update a webhook's URL, events, name, or active status"
+---
+
+Update any combination of fields on an existing webhook. Only include the fields you want to change.
+
+## Authentication
+
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+---
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Webhook ID.
+</ParamField>
+
+---
+
+## Request body
+
+All fields are optional. Include only what you want to change.
+
+<ParamField body="url" type="string">
+  New endpoint URL.
+</ParamField>
+
+<ParamField body="events" type="string[]">
+  New event subscriptions. **Replaces** the existing list (not a merge).
+  Valid values: `message.sent`, `message.failed`, `message.fallback`, `message.reply`, `message.opened`.
+</ParamField>
+
+<ParamField body="name" type="string">
+  New name.
+</ParamField>
+
+<ParamField body="description" type="string">
+  New description.
+</ParamField>
+
+<ParamField body="isActive" type="boolean">
+  Set `false` to pause delivery without deleting the webhook. Set `true` to resume.
+</ParamField>
+
+---
+
+## Examples
+
+<CodeGroup>
+
+```bash Disable webhook
+curl -X PATCH "https://app.tuco.ai/api/webhooks/680a1b2c3d4e5f6789012345" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "isActive": false }'
+```
+
+```bash Change URL
+curl -X PATCH "https://app.tuco.ai/api/webhooks/680a1b2c3d4e5f6789012345" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "url": "https://new-endpoint.example.com/webhooks" }'
+```
+
+```bash Change events
+curl -X PATCH "https://app.tuco.ai/api/webhooks/680a1b2c3d4e5f6789012345" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{ "events": ["message.reply", "message.opened"] }'
+```
+
+</CodeGroup>
+
+```json 200 Response
+{ "success": true }
+```
+
+---
+
+## Errors
+
+| Status | When |
+|--------|------|
+| `400` | Invalid URL, empty events array, invalid event types, empty name |
+| `401` | Invalid or missing API key |
+| `402` | Subscription past due |
+| `404` | Webhook not found in your workspace |

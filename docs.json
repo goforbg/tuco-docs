@@ -8,6 +8,7 @@
     "dark": "#111827"
   },
   "favicon": "/images/tuco_v1_round.svg",
+  "openapi": "api-reference/openapi.json",
   "navigation": {
     "tabs": [
       {
@@ -25,7 +26,10 @@
             "pages": [
               "features/upload-leads",
               "features/check-availability",
-              "features/send-messages"
+              "features/send-messages",
+              "features/mcp-server",
+              "features/email-bridge",
+              "features/telegram"
             ]
           },
           {
@@ -33,7 +37,8 @@
             "pages": [
               "features/campaigns",
               "features/failures-and-fallbacks",
-              "features/replies"
+              "features/replies",
+              "features/reactions"
             ]
           },
           {
@@ -76,10 +81,30 @@
             ]
           },
           {
+            "group": "AI & Automation",
+            "pages": [
+              "features/knowledge-base",
+              "features/ai-campaigns",
+              "features/goal-bots",
+              "features/api-tools"
+            ]
+          },
+          {
+            "group": "Lead Management",
+            "pages": [
+              "features/reactivation"
+            ]
+          },
+          {
             "group": "Integrations",
             "pages": [
               "integrations/hubspot",
-              "features/telegram"
+              "integrations/ghl",
+              "integrations/n8n",
+              "integrations/mcp-server",
+              "integrations/email-bridge",
+              "integrations/telegram-bot",
+              "integrations/webhooks"
             ]
           },
           {
@@ -96,7 +121,6 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "api-reference/openapi.json",
         "groups": [
           {
             "group": "Overview",
@@ -107,7 +131,14 @@
           {
             "group": "Webhooks",
             "pages": [
-              "api-reference/message-webhooks"
+              "api-reference/endpoint/webhook",
+              "api-reference/message-webhooks",
+              "api-reference/endpoint/list-webhooks",
+              "api-reference/endpoint/create-webhook",
+              "api-reference/endpoint/get-webhook",
+              "api-reference/endpoint/update-webhook",
+              "api-reference/endpoint/delete-webhook",
+              "api-reference/endpoint/test-webhook"
             ]
           },
           {
@@ -117,12 +148,62 @@
             ]
           },
           {
-            "group": "Core Resources",
+            "group": "iMessage Availability",
+            "pages": [
+              "api-reference/endpoint/check-availability",
+              "api-reference/endpoint/check-availability-rr",
+              "api-reference/endpoint/lead-check-availability",
+              "api-reference/endpoint/bulk-check-availability"
+            ]
+          },
+          {
+            "group": "Messages",
             "pages": [
               "api-reference/messages",
+              "api-reference/endpoint/send-message",
+              "api-reference/endpoint/send-with-attachments",
+              "api-reference/endpoint/cancel-for-lead"
+            ]
+          },
+          {
+            "group": "Replies",
+            "pages": [
+              "api-reference/endpoint/get-replies"
+            ]
+          },
+          {
+            "group": "Lines & Leads",
+            "pages": [
               "api-reference/lines",
               "api-reference/leads",
               "api-reference/endpoint/check-availability-rr"
+            ]
+          },
+          {
+            "group": "Campaigns",
+            "pages": [
+              "api-reference/endpoint/evaluate-conditions"
+            ]
+          },
+          {
+            "group": "Goal Bots",
+            "pages": [
+              "api-reference/endpoint/list-goal-bots",
+              "api-reference/endpoint/create-goal-bot",
+              "api-reference/endpoint/get-goal-bot",
+              "api-reference/endpoint/update-goal-bot",
+              "api-reference/endpoint/archive-goal-bot",
+              "api-reference/endpoint/enroll-lead",
+              "api-reference/endpoint/unenroll-lead"
+            ]
+          },
+          {
+            "group": "API Tools",
+            "pages": [
+              "api-reference/endpoint/list-tools",
+              "api-reference/endpoint/save-tool",
+              "api-reference/endpoint/delete-tool",
+              "api-reference/endpoint/test-tool"
             ]
           }
         ]

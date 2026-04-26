@@ -1,0 +1,152 @@
+---
+title: "Check iMessage Availability (Single Address)"
+api: "GET /api/check-availability"
+description: "Check if a phone number or email is on iMessage -- no saved lead required"
+---
+
+The simplest way to check if a phone or email has iMessage. Just pass the address as a query parameter. No lead ID, no saved contact required.
+
+<Tip>
+**Don't know which endpoint to use?** Start here. This is the one you want for a quick, one-off check.
+
+| I have... | Use this |
+|-----------|----------|
+| A phone number or email | **This endpoint** (`GET /api/check-availability?address=...`) |
+| Multiple phones/emails to check at once | [`POST /api/check-availability`](#batch-check-multiple-addresses) (see below) |
+| A saved lead ID | [`GET /api/leads/check-availability`](/api-reference/endpoint/lead-check-availability) |
+| Multiple lead IDs or a list | [`POST /api/leads/check-availability`](/api-reference/endpoint/bulk-check-availability) |
+| A phone + email and want round-robin | [`POST /api/check-availability-rr`](/api-reference/endpoint/check-availability-rr) |
+</Tip>
+
+---
+
+## Single Address Check
+
+### Request
+
+```bash
+curl "https://app.tuco.ai/api/check-availability?address=%2B14155551234" \
+  -H "Authorization: Bearer tuco_sk_YOUR_KEY"
+```
+
+<ParamField query="address" type="string" required>
+  Phone number (E.164 format) or email address to check.
+
+  Examples: `+14155551234`, `frank@example.com`
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "available": true,
+  "address": "+14155551234"
+}
+```
+
+<ResponseField name="success" type="boolean">Whether the API call completed without errors.</ResponseField>
+<ResponseField name="available" type="boolean">`true` if the address is registered on iMessage right now.</ResponseField>
+<ResponseField name="address" type="string">The address that was checked (echoed back).</ResponseField>
+
+### Not available
+
+```json
+{
+  "success": true,
+  "available": false,
+  "address": "+14155551234"
+}
+```
+
+---
+
+## Single Address Check (POST)
+
+**`POST /api/check-availability`**
+
+You can also POST a single address instead of using the GET query param.
+
+### Request
+
+```bash
+curl -X POST https://app.tuco.ai/api/check-availability \
+  -H "Authorization: Bearer tuco_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "address": "+14155551234" }'
+```
+
+<ParamField body="address" type="string">
+  A single phone number or email to check. Mutually exclusive with `addresses`.
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "results": [
+    { "address": "+14155551234", "available": true }
+  ]
+}
+```
+
+---
+
+## Batch Check (Multiple Addresses)
+
+**`POST /api/check-availability`**
+
+Check up to 100 addresses in a single request. Each address is checked sequentially (3s gap per device).
+
+### Request
+
+```bash
+curl -X POST https://app.tuco.ai/api/check-availability \
+  -H "Authorization: Bearer tuco_sk_YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "addresses": ["+14155551234", "+14155559999", "frank@example.com"]
+  }'
+```
+
+<ParamField body="addresses" type="string[]">
+  Array of phone numbers or emails to check. Max 100 per request. Mutually exclusive with `address`.
+</ParamField>
+
+### Response
+
+```json
+{
+  "success": true,
+  "results": [
+    { "address": "+14155551234", "available": true },
+    { "address": "+14155559999", "available": false },
+    { "address": "frank@example.com", "available": false }
+  ]
+}
+```
+
+---
+
+## Rate Limits
+
+| Limit | Value |
+|-------|-------|
+| API rate limit | **200 req/min** per workspace |
+| Daily cap | **70 checks/day per line** (e.g., 3 lines = 210 checks) |
+| Device gap | **3 seconds** between checks on the same physical device |
+
+---
+
+## Error Codes
+
+| Code | When | Body |
+|------|------|------|
+| `400` | Missing or empty `address` param (GET) | `{ "error": "Address parameter is required (phone or email)" }` |
+| `400` | Missing both `address` and `addresses` (POST) | `{ "error": "addresses array is required and must not be empty" }` |
+| `400` | Too many addresses (POST, >100) | `{ "error": "Maximum 100 addresses per request" }` |
+| `401` | Invalid API key | `{ "error": "Unauthorized" }` |
+| `429` | Rate limit exceeded | `{ "error": "Rate limit exceeded" }` |
+| `429` | All lines hit daily cap | `{ "error": "Daily availability check quota exhausted" }` |
+| `500` | Server error | `{ "error": "Internal server error" }` |

@@ -1,0 +1,48 @@
+---
+title: "Delete Webhook"
+api: "DELETE /api/webhooks/{id}"
+description: "Permanently delete a webhook"
+---
+
+Permanently delete a webhook. All future event deliveries to this endpoint stop immediately.
+
+## Authentication
+
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+---
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Webhook ID.
+</ParamField>
+
+---
+
+## Example
+
+```bash
+curl -X DELETE "https://app.tuco.ai/api/webhooks/680a1b2c3d4e5f6789012345" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+```json 200 Response
+{ "success": true }
+```
+
+<Tip>
+If you just want to temporarily stop delivery, use [Update Webhook](/api-reference/endpoint/update-webhook) with `isActive: false` instead of deleting.
+</Tip>
+
+---
+
+## Errors
+
+| Status | When |
+|--------|------|
+| `401` | Invalid or missing API key |
+| `402` | Subscription past due |
+| `404` | Webhook not found in your workspace |

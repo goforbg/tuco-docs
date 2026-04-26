@@ -1,47 +1,75 @@
 ---
-title: "Check Lead Availability Endpoint"
+title: "Check iMessage Availability (Single Lead)"
 api: "GET /api/leads/check-availability"
 description: "Check if a specific lead is reachable via iMessage"
 ---
 
-## Endpoint
+Check iMessage availability for a single lead using their stored phone numbers and emails. Tuco checks every address on the lead (phone, email, altPhone1-3, altEmail1-3) and stops at the first one that is iMessage-capable. Updates the lead’s `availabilityStatus` field.
 
-- **Method**: `GET`  
-- **Path**: `/api/leads/check-availability`
+<Tip>
+Don’t have a lead ID? Use [`GET /api/check-availability?address=+12025551234`](/api-reference/endpoint/check-availability) to check any phone or email directly. No saved lead required.
+</Tip>
 
-Checks iMessage availability for a single Tuco lead and updates that lead’s availability status.
-
----
-
-## Query Parameters
-
-- `id` (`string`, required) – the lead’s ID.
-
-Example:
+## Authentication
 
 ```bash
-GET /api/leads/check-availability?id=667f1f77bcf86cd799439012
-Authorization: Bearer tuco_xxx
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
 ```
 
----
+## Query parameters
 
-## Response
+<ParamField query="id" type="string" required>
+  The lead’s ID (MongoDB ObjectId).
+  
+  Example: `667f1f77bcf86cd799439012`
+</ParamField>
+
+## Example
+
+```bash
+curl "https://app.tuco.ai/api/leads/check-availability?id=667f1f77bcf86cd799439012" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+## Success response (200)
 
 ```json
 {
   "success": true,
   "leadId": "667f1f77bcf86cd799439012",
   "available": true,
-  "status": "available"
+  "status": "available",
+  "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+  "ghlLocationId": "eL7DD22BdZ0rismu7qCA",
+  "hsPortalId": null,
+  "hsContactId": null
 }
 ```
 
-`status` will be one of:
+<ResponseField name="success" type="boolean">Always `true` on a 200 response.</ResponseField>
+<ResponseField name="leadId" type="string">The lead ID that was checked.</ResponseField>
+<ResponseField name="available" type="boolean">Whether the lead is reachable via iMessage.</ResponseField>
+<ResponseField name="status" type="string">
+  One of:
+  - `"available"` — at least one stored address supports iMessage
+  - `"unavailable"` — none of the stored addresses support iMessage
+  - `"error"` — the check failed (temporary issue)
+</ResponseField>
+<ResponseField name="ghlContactId" type="string | null">GoHighLevel contact ID, if linked.</ResponseField>
+<ResponseField name="ghlLocationId" type="string | null">GoHighLevel location ID, if linked.</ResponseField>
+<ResponseField name="hsPortalId" type="string | null">HubSpot portal ID, if linked.</ResponseField>
+<ResponseField name="hsContactId" type="string | null">HubSpot contact ID, if linked.</ResponseField>
 
-- `"available"` – at least one stored address supports iMessage.  
-- `"unavailable"` – none of the stored addresses support iMessage.  
-- `"error"` – the check failed (for example, due to a temporary issue).
+The same status is written back to the lead, so you can also read it via the Leads API.
 
-The same status is written back to the lead, so you can also read it via the main Leads API.
+## Error responses
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | Missing `id` parameter | `{ "error": "Lead ID is required" }` |
+| `401` | Invalid or missing API key | `{ "error": "Unauthorized" }` |
+| `404` | Lead not found | `{ "error": "Lead not found" }` |
+| `429` | API rate limit exceeded (200 req/min) | `{ "error": "Rate limit exceeded" }` |
+| `429` | All lines hit daily cap (70/day/line) | `{ "error": "Daily availability check quota exhausted" }` |
+| `500` | Internal server error | `{ "error": "Internal server error" }` |
 

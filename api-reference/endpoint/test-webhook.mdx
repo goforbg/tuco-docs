@@ -1,0 +1,105 @@
+---
+title: "Test Webhook"
+api: "POST /api/webhooks/{id}/health-check"
+description: "Fire a test webhook to verify your endpoint is reachable"
+---
+
+Send a real signed test webhook to your endpoint. Use this to verify your endpoint is reachable, responding with `2xx`, and correctly validating the `X-Tuco-Signature` header.
+
+The test payload includes `data.test: true` so your handler can distinguish health checks from real events.
+
+## Authentication
+
+```bash
+Authorization: Bearer tuco_sk_xxxxxxxxxxxxx
+```
+
+---
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  Webhook ID.
+</ParamField>
+
+---
+
+## What gets sent to your endpoint
+
+Tuco sends a real `POST` to your webhook URL with:
+
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `application/json` |
+| `X-Tuco-Signature` | HMAC-SHA256 signature (same as production webhooks) |
+| `X-Tuco-Event` | First event type from your subscription |
+| `X-Tuco-Timestamp` | Current ISO timestamp |
+
+```json Test payload your endpoint receives
+{
+  "event": "message.sent",
+  "timestamp": "2026-04-12T12:00:00.000Z",
+  "workspaceId": "org_xxx",
+  "data": {
+    "test": true,
+    "message": "This is a health check test webhook from Tuco AI"
+  }
+}
+```
+
+<Info>
+The signature is real — computed with your webhook's secret using the same HMAC-SHA256 algorithm as production webhooks. This means your signature verification code gets tested too.
+</Info>
+
+---
+
+## Response
+
+<ResponseField name="success" type="boolean">Whether your endpoint responded with 2xx</ResponseField>
+<ResponseField name="message" type="string">Human-readable result (on success)</ResponseField>
+<ResponseField name="statusCode" type="number">HTTP status code from your endpoint</ResponseField>
+<ResponseField name="response" type="string">Response body from your endpoint</ResponseField>
+<ResponseField name="error" type="string">Error message (on failure)</ResponseField>
+<ResponseField name="details" type="string">Error details (on failure)</ResponseField>
+
+---
+
+## Examples
+
+```bash
+curl -X POST "https://app.tuco.ai/api/webhooks/680a1b2c3d4e5f6789012345/health-check" \
+  -H "Authorization: Bearer tuco_sk_xxxxxxxxxxxxx"
+```
+
+<CodeGroup>
+
+```json Healthy endpoint
+{
+  "success": true,
+  "message": "Health check passed",
+  "statusCode": 200,
+  "response": "OK"
+}
+```
+
+```json Endpoint returned error
+{
+  "success": false,
+  "error": "HTTP 502: Bad Gateway",
+  "details": "upstream connect error",
+  "statusCode": 502
+}
+```
+
+```json Endpoint timed out
+{
+  "success": false,
+  "error": "The operation was aborted due to timeout"
+}
+```
+
+</CodeGroup>
+
+<Warning>
+The test has a **10-second timeout**. If your endpoint takes longer, it'll report a timeout failure. Make sure your handler returns `2xx` quickly and does heavy processing asynchronously.
+</Warning>

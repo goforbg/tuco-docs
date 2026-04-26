@@ -1,0 +1,96 @@
+---
+title: "Goal Bots"
+description: "AI-driven conversational bots that guide leads through goal stages"
+icon: "crosshairs"
+---
+
+<Note>Goal Bots are now called **AI SDR Conversations** — find them at AI SDR → Conversations tab.</Note>
+
+## What Goal Bots Do
+
+Goal Bots are AI-driven conversation managers. Unlike campaigns (which send messages on a schedule), Goal Bots respond to leads conversationally, guiding them through stages toward a specific goal.
+
+**Examples:**
+- Book a demo call
+- Qualify a lead (budget, authority, need, timeline)
+- Collect feedback on product experience
+- Re-engage cold leads with structured discovery
+
+## How They Differ from Campaigns
+
+| | Campaigns | Goal Bots |
+|---|---|---|
+| Trigger | Time-based (wait 3 days, send) | Conversation-based (lead replies, AI responds) |
+| Direction | Outbound push | Bi-directional conversation |
+| Progression | Linear (step 1 → 2 → 3) | Non-linear (can loop, skip, advance) |
+| AI role | Optional per step | Central — AI drives every response |
+| End condition | All steps sent | Goal achieved or abandoned |
+
+## Stages
+
+Each Goal Bot has ordered stages. The AI works through them one at a time:
+
+1. **Discovery** — understand the lead's situation
+2. **Qualification** — confirm budget, timeline, authority
+3. **Pitch** — present your solution
+4. **Close** — ask for the meeting/signup/purchase
+
+Each stage has:
+- **Name** and **objective** — what the AI should accomplish
+- **Prompt** — instructions for the AI at this stage
+- **Advance conditions** — when to move to next stage (AI judgment, HubSpot property, GHL tag, custom API, or specific fields collected)
+- **Exit conditions** — when to abandon (negative sentiment, keywords like "not interested")
+- **Fields to collect** — structured data the AI should gather (budget, timeline, etc.)
+
+## How It Works
+
+1. Lead is enrolled (manually, via API, campaign handoff, or tag trigger)
+2. Lead sends a message
+3. AI Responder loads the current stage's prompt and objective
+4. AI generates a response driving toward the stage goal
+5. After each reply, a stage evaluator checks: ADVANCE, CONTINUE, or EXIT
+6. On ADVANCE: moves to next stage (or completes goal)
+7. On EXIT: abandons goal, applies exit actions
+
+## Entry Points
+
+| Entry | How |
+|-------|-----|
+| Manual | From lead detail page |
+| API | `POST /api/goal-bots/{id}/enroll` with `{ "leadId": "..." }` |
+| Campaign handoff | Set `onReplyHandoff` on a campaign — when lead replies, goal bot takes over |
+| Tag trigger | Auto-enroll when a specific tag is added (from GHL/HubSpot/manual) |
+
+## Completion & Abandonment
+
+When the goal is completed:
+- Add a tag to the lead (e.g. "demo_booked")
+- Update a HubSpot property or GHL tag
+- Call a webhook
+- Chain to another Goal Bot
+
+When abandoned:
+- Add a tag (e.g. "not_interested")
+- Update CRM property
+- Call a webhook
+
+## Settings
+
+- **AI Model** — defaults to workspace AI Responder model
+- **Tone** — professional, friendly, or casual
+- **Mode** — copilot (low-confidence replies need approval) or autopilot (all auto-send)
+- **Inactivity timeout** — auto-abandon after N days of silence (default 7)
+
+## API Reference
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/goal-bots` | GET | List goal bots |
+| `/api/goal-bots` | POST | Create goal bot |
+| `/api/goal-bots/{id}` | GET | Get goal bot details |
+| `/api/goal-bots/{id}` | PUT | Update goal bot |
+| `/api/goal-bots/{id}` | DELETE | Archive goal bot |
+| `/api/goal-bots/{id}/enroll` | POST | Enroll a lead |
+| `/api/goal-bots/{id}/enroll` | DELETE | Unenroll a lead |
+
+<Note>A lead can only be in one Goal Bot at a time. Unenroll first before enrolling in a different bot.</Note>
