@@ -459,6 +459,18 @@
                       "companyName": "Acme Inc"
                     }
                   }
+                },
+                "newLeadWithGhl": {
+                  "summary": "Create lead with GHL contact ID for deterministic linking",
+                  "value": {
+                    "lead": {
+                      "firstName": "Jane",
+                      "phone": "+12025551234",
+                      "email": "jane@example.com",
+                      "ghlContactId": "aMUQn0u0Z7cw0NQ7tJ5R",
+                      "ghlLocationId": "eL7DD22BdZ0rismu7qCA"
+                    }
+                  }
                 }
               }
             }
@@ -1707,17 +1719,32 @@
       "AddLeadToCampaignRequest": {
         "type": "object",
         "properties": {
-          "leadId": { "type": "string", "description": "Existing lead ID" },
+          "leadId": { "type": "string", "description": "Existing lead ID. Provide either this or `lead`." },
           "lead": {
             "type": "object",
-            "description": "Create new lead and add",
+            "description": "Create new lead (or reuse existing matching lead) and add to the campaign. Workspace-wide dedup runs across email, phone, altEmail1-3, altPhone1-3, integrationIds.ghlRecordId, integrationIds.hubspotRecordId — when an existing lead matches, that lead is reused as-is (request body fields are NOT applied to it; integration IDs are backfilled if the matched lead has none).",
+            "required": ["firstName"],
             "properties": {
-              "firstName": { "type": "string" },
+              "firstName": { "type": "string", "description": "Required." },
               "lastName": { "type": "string" },
-              "email": { "type": "string" },
-              "phone": { "type": "string" },
+              "email": { "type": "string", "description": "Lowercased before dedup. Either email or phone is required." },
+              "phone": { "type": "string", "description": "Normalized to E.164 (e.g. +14155551234) before dedup. Either email or phone is required." },
+              "altPhone1": { "type": "string" },
+              "altPhone2": { "type": "string" },
+              "altPhone3": { "type": "string" },
+              "altEmail1": { "type": "string" },
+              "altEmail2": { "type": "string" },
+              "altEmail3": { "type": "string" },
               "companyName": { "type": "string" },
-              "jobTitle": { "type": "string" }
+              "jobTitle": { "type": "string" },
+              "linkedinUrl": { "type": "string" },
+              "notes": { "type": "string" },
+              "customFields": { "type": "object", "description": "Free-form key/value object stored on the lead." },
+              "contactOwnerEmail": { "type": "string", "nullable": true, "description": "Email of the workspace user who owns this contact." },
+              "contactOwnerId": { "type": "string", "description": "User ID of the workspace member who owns this contact (alternative to contactOwnerEmail)." },
+              "ghlContactId": { "type": "string", "description": "GHL contact ID. Stored as integrationIds.ghlRecordId. Used for deterministic dedup — a second call with the same ghlContactId reuses the lead. Backfilled onto a matched existing lead when the lead has no ghlRecordId yet (never overwrites)." },
+              "ghlLocationId": { "type": "string", "description": "GHL location ID. Stored as integrationIds.ghlLocationId. Backfilled onto matched lead if missing." },
+              "hsContactId": { "type": "string", "description": "HubSpot contact ID. Stored as integrationIds.hubspotRecordId. Used for deterministic dedup. Backfilled onto matched lead if missing." }
             }
           }
         }

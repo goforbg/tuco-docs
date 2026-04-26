@@ -122,5 +122,68 @@ If you send `lead` instead of `leadId`, Tuco:
 }
 ```
 
+When the lead is **already enrolled** in this campaign, you receive `200` instead of `201`:
+
+```json
+{
+  "success": true,
+  "leadId": "667f1f77bcf86cd799439012",
+  "campaignId": "6680e6d0bcf86cd799439099",
+  "messageCount": 0,
+  "alreadyInCampaign": true,
+  "message": "Lead already in campaign (re-entry not allowed)."
+}
+```
+
 If the campaign or lead cannot be found you receive a `404`. If the payload is invalid (for example, missing both `leadId` and `lead`) you receive a `400` with a descriptive error. Authentication failures return `401`.
+
+---
+
+## Deduplication
+
+When you send `lead` (rather than `leadId`), Tuco runs a workspace-wide dedup check before creating anything.
+
+**Match rule:** any of `email`, `phone`, `altEmail1-3`, `altPhone1-3` matching an existing lead (after normalization) reuses that lead.
+
+**Normalization:**
+- `email` → trimmed and lowercased
+- `phone` → E.164 (`+15551234567`)
+
+**Important:** when an existing lead matches, the request body fields (`firstName`, `email`, `phone`, `companyName`, etc.) are **NOT** applied to it. The existing lead is reused as-is. To update a matched lead, call `PUT /api/leads/{id}` separately, then add to the campaign by `leadId`.
+
+| Existing lead in workspace                | Already in this campaign? | Result                                                                |
+|-------------------------------------------|---------------------------|------------------------------------------------------------------------|
+| None                                      | —                         | **201** — new lead created and enrolled                                |
+| Match by phone (E.164)                    | No                        | **201** — existing lead enrolled, fields *not* updated                  |
+| Match by email (lowercased)               | No                        | **201** — existing lead enrolled, fields *not* updated                  |
+| Match by `altEmail*` / `altPhone*`        | No                        | **201** — alts count, existing lead enrolled                            |
+| Match by phone or email                   | Yes                       | **200** with `alreadyInCampaign: true` (safe to retry)                 |
+| Phone formatted differently               | —                         | Normalized first — `9042956129` matches `+919042956129`                |
+| Email casing differs                      | —                         | Lowercased first — `A@X.com` matches `a@x.com`                         |
+
+---
+
+## GHL Workflow Integration (15-minute sync gap)
+
+Tuco's GHL connector syncs contacts on a 15-minute schedule. To enroll a GHL contact into a Tuco campaign **immediately**, call this endpoint from a GHL workflow Webhook action.
+
+### How merging works across the sync gap
+
+When you add a lead via this API and the periodic GHL sync later sees the same contact, Tuco merges by **phone only** (`integration-sync.ts`).
+
+| Lead state in Tuco                                            | GHL contact has                  | Sync result                                                                 |
+|---------------------------------------------------------------|----------------------------------|-----------------------------------------------------------------------------|
+| Lead has phone P, no `integrationIds.ghlRecordId` yet         | Same phone P                     | Merges: sets `ghlRecordId` on existing lead, updates fields, `$addToSet` tags |
+| Lead has email match but phone differs / is missing           | Email match only                 | **No merge** — creates a *separate* GHL-sourced lead (gotcha)                |
+| Lead already has `integrationIds.ghlRecordId = X`             | `contact.id = X`                 | Normal upsert: updates fields, merges tags                                  |
+| No Tuco lead exists                                           | New contact                      | Inserts new lead with `source = "ghl"`                                      |
+
+**Recommendation:** pass `ghlContactId` (and optionally `ghlLocationId`) in the request body for deterministic linking. The endpoint:
+
+- Adds `integrationIds.ghlRecordId` to the dedup match (a second call with the same `ghlContactId` reuses the lead even if phone or email shifted).
+- Backfills `integrationIds.ghlRecordId` / `ghlLocationId` onto a matched existing lead when the lead doesn't have them yet (never overwrites).
+
+If you can't pass `ghlContactId`, always send `phone` in E.164 — the next periodic GHL sync (every 15 minutes) merges by phone. Email-only matching at sync time is **not** supported and will create a duplicate GHL-sourced lead.
+
+The same applies for HubSpot via `hsContactId` (stored as `integrationIds.hubspotRecordId`).
 
